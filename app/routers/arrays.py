@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException, Query
 from datetime import datetime, timedelta
 from typing import Optional
-from app.models import ArrayStatus, ArraySettingsRequest, SystemLoad, PowerEvent, HistoryPoint
+from app.models import ArrayStatus, ArraySettingsRequest, SystemLoad, PowerEvent
 
 
 router = APIRouter()
@@ -107,30 +107,6 @@ async def get_system_load(request: Request):
         budget_w=budget_w,
         timestamp=datetime.now()
     )
-
-
-@router.get("/history/array/{array_id}")
-async def get_array_history(
-    array_id: str,
-    request: Request,
-    range_hours: int = Query(default=1, ge=1, le=48)
-):
-    store = request.app.state.store
-    
-    since = datetime.now() - timedelta(hours=range_hours)
-    
-    history = store.get_history(stage_id=array_id, since=since)
-    
-    points = []
-    for record in history:
-        points.append(HistoryPoint(
-            t=record.ts,
-            v=record.vout_v,
-            i=record.iout_a,
-            p=record.vout_v * record.iout_a
-        ))
-    
-    return {"array_id": array_id, "points": points, "range_hours": range_hours}
 
 
 @router.get("/events")
