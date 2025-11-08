@@ -5,7 +5,9 @@ from .config import CONFIG, DB_URL, APP_PORT
 from .services.stage_manager import StageManager
 from .services.scheduler import JobScheduler
 from .services.storage import make_db, Store
-from .routers import telemetry, control, config_api
+from .services.automation import AutomationService
+from .services.system_health import SystemHealthService
+from .routers import telemetry, control, config_api, automation
 
 
 app = FastAPI(title=CONFIG['site']['name'])
@@ -20,11 +22,14 @@ async def root():
 app.include_router(telemetry.router, prefix='/api')
 app.include_router(control.router, prefix='/api')
 app.include_router(config_api.router, prefix='/api')
+app.include_router(automation.router, prefix='/api')
 
 
 @app.on_event('startup')
 async def startup():
     app.state.mgr = StageManager(CONFIG)
+    app.state.automation = AutomationService()
+    app.state.health = SystemHealthService()
     engine = make_db(DB_URL)
     store = Store(engine)
     app.state.latest = app.state.mgr.snapshot()
