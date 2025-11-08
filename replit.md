@@ -8,44 +8,71 @@ Reef Controller is a FastAPI-based application designed to monitor and control r
 
 ## Recent Changes (November 8, 2025)
 
-### Enhanced UI and Features
-- **Beautiful Ocean-Themed Design**: Gradient backgrounds, professional spacing, and clean card layout
-- **Live Time Display**: Real-time clock showing current date and time
-- **Interactive LED Control**: Sliders for controlling light intensity (0-100%) with live updates
-- **Dynamic Sensor Simulation**: Realistic voltage and current readings that respond to duty cycle changes
-- **Automation Dashboard**: Displays completed and upcoming tasks
-- **Wave Mode Control**: Dropdown selector for various pump patterns (Reef Pulse, Left Swirl, etc.)
-- **System Health Monitoring**: Color-coded health card showing warnings and errors
+### Major Upgrade: Professional Touch-Enabled Interface with Intelligent Power Management
+
+#### Per-LED Granular Control
+- **3 Renamed Arrays**: Acropora SPS Lights (A1), LPS Lights (A2), Center Lights (A3)
+- **6 Individual LEDs per array**: Each LED has configurable name, intensity limit (0-100%), and priority (1-18)
+- **Real-time LED telemetry**: Voltage, current, power, and state tracking for each LED
+- **Interactive settings modals**: Touch-optimized dialogs for configuring LED parameters and reordering priorities
+
+#### Intelligent Power Management
+- **Priority-based power shedding**: Automatically reduces load by turning off lowest-priority LEDs when power budget is exceeded
+- **Hysteresis-controlled restoration**: 20% headroom band prevents LED flapping during marginal power conditions
+- **Real-time power allocation**: Runs every second, responding to PV generation and battery availability
+- **Event tracking**: Complete audit log of all shed/restore/alert events with timestamps
+
+#### Touch-Optimized UI (1920×1080)
+- **Weather-app styling**: Ocean gradient backgrounds, clean card layout, professional spacing
+- **Large touch targets**: All interactive elements sized for finger input (48×48px minimum)
+- **Array cards**: Individual cards for each LED array showing status, power, and per-LED controls
+- **System monitoring**: Real-time PV input, battery flow, and net power display with color-coded indicators
+- **Sparkline graphs**: Miniature trend visualizations on array cards
+- **Event feed**: Live display of recent shed/restore events
+- **Responsive modals**: Full-screen settings dialogs with drag-to-reorder priority lists
+
+#### Enhanced Simulation
+- **Diurnal PV curve**: Realistic solar power generation following time-of-day (0W at night, peak at solar noon)
+- **Per-LED load calculation**: Accurate power consumption based on individual LED states
+- **Battery flow simulation**: Realistic charge/discharge behavior with voltage sag under load
+- **Configurable power budget**: Easy testing of deficit scenarios by adjusting target_watts in config
 
 ### Architecture
 
 #### Backend (FastAPI)
 - **Services**:
-  - `StageManager`: Manages LED arrays and battery stages
+  - `StageManager`: Manages LED arrays and battery stages with per-LED state tracking
+  - `PowerAllocator`: Intelligent load shedding and restoration with hysteresis logic
+  - `EventsService`: Tracks and persists shed/restore/alert events
   - `AutomationService`: Handles task scheduling and wave modes
   - `SystemHealthService`: Monitors system health and generates alerts
-  - `JobScheduler`: Runs periodic telemetry sampling
-  - `Store`: Persists telemetry data to SQLite database
+  - `JobScheduler`: Runs periodic telemetry sampling and power allocation (1Hz)
+  - `Store`: Persists telemetry and events to SQLite database
 
 - **API Endpoints**:
-  - `/api/status` - Current stage status
-  - `/api/snapshot` - Latest telemetry readings
-  - `/api/control` - Update stage settings (mode, duty, enable)
-  - `/api/automation/tasks/*` - Completed and upcoming tasks
-  - `/api/automation/wave-modes` - Get/set wave modes
+  - `/api/arrays` - Array status with per-LED telemetry
+  - `/api/arrays/{id}/settings` - Update array/LED configuration
+  - `/api/system/load` - Current PV, battery, and net power
+  - `/api/events` - Recent shed/restore/alert events
+  - `/api/history/array/{id}` - Historical telemetry for sparklines
+  - `/api/automation/tasks/*` - Task management
+  - `/api/automation/wave-modes` - Wave pump patterns
   - `/api/system/health` - System health status
 
 #### Frontend
 - Vanilla JavaScript (no frameworks)
-- Real-time updates via polling
-- Interactive sliders with immediate visual feedback
-- Responsive grid layout
+- Touch-optimized for 14" FHD displays (1920×1080)
+- Real-time updates via polling (2s intervals)
+- Modal dialogs for settings and history
+- Sparkline rendering with HTML5 Canvas
+- Drag-to-reorder priority lists
 
 #### Simulation
-All sensors use simulated data with realistic behavior:
-- Current scales 0-2A based on duty cycle (0-100%)
-- Voltage drops up to 10% under full load
-- 90% efficiency factor for current conversion
+Realistic sensor simulation with:
+- Diurnal PV power curve (time-of-day based generation)
+- Per-LED current/voltage/power calculation
+- Battery voltage sag under discharge
+- Configurable array limits and priorities
 - Random variations for realism
 
 ## Project Structure
