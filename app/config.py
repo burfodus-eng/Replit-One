@@ -12,4 +12,4 @@ GPIO_DRIVER = os.getenv("GPIO_DRIVER", "gpio")
 
 
 with open("config.yaml", "r") as f:
-CONFIG = yaml.safe_load(f)
+    CONFIG = yaml.safe_load(f)

@@ -1,4 +1,30 @@
 <!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reef Controller</title>
+<style>
+body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 1rem; background: #1a1a1a; color: #e0e0e0; }
+h1 { color: #4a9eff; }
+#cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+.card { background: #2a2a2a; border: 1px solid #404040; border-radius: 8px; padding: 1rem; }
+.card h3 { margin-top: 0; color: #4a9eff; }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; }
+label { display: flex; flex-direction: column; font-size: 0.9rem; }
+input, select { margin-top: 0.25rem; padding: 0.25rem; background: #1a1a1a; color: #e0e0e0; border: 1px solid #404040; border-radius: 4px; }
+button { padding: 0.5rem 1rem; background: #4a9eff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+button:hover { background: #3a8eef; }
+</style>
+</head>
+<body>
+<h1>Reef Controller</h1>
+<div id="cards"></div>
+
+<script>
+let STAGES = [];
+
+async function loadStatus(){
 const res = await fetch('/api/status');
 const data = await res.json();
 const wrap = document.getElementById('cards');

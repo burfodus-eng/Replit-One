@@ -1,48 +1,48 @@
 site:
-name: "Reef Controller"
-timezone: "Australia/Brisbane"
+  name: "Reef Controller"
+  timezone: "Australia/Brisbane"
 
 
 stages:
-arrays:
-- id: "A"
-enabled: true
-auto: true
-pwm_channel: 0
-target_lux: 15000
-timer:
-on: "08:00"
-off: "20:30"
-- id: "B"
-enabled: true
-auto: true
-pwm_channel: 1
-target_lux: 15000
-timer:
-on: "08:15"
-off: "20:45"
-- id: "C"
-enabled: true
-auto: true
-pwm_channel: 2
-target_lux: 15000
-timer:
-on: "08:30"
-off: "21:00"
-battery:
-enabled: true
-charge_limit_v: 14.2
-float_v: 13.6
-discharge_cutoff_v: 12.0
-reserve_minutes: 60
+  arrays:
+    - id: "A"
+      enabled: true
+      auto: true
+      pwm_channel: 0
+      target_lux: 15000
+      timer:
+        on: "08:00"
+        off: "20:30"
+    - id: "B"
+      enabled: true
+      auto: true
+      pwm_channel: 1
+      target_lux: 15000
+      timer:
+        on: "08:15"
+        off: "20:45"
+    - id: "C"
+      enabled: true
+      auto: true
+      pwm_channel: 2
+      target_lux: 15000
+      timer:
+        on: "08:30"
+        off: "21:00"
+  battery:
+    enabled: true
+    charge_limit_v: 14.2
+    float_v: 13.6
+    discharge_cutoff_v: 12.0
+    reserve_minutes: 60
 
 
 telemetry:
-sample_interval_ms: 1000
-persist_every_s: 10
+  sample_interval_ms: 1000
+  persist_every_s: 10
 
 
 alerts:
-low_battery_v: 12.2
-high_panel_v: 85.0
-webhook_url: null
+  low_battery_v: 12.2
+  high_panel_v: 85.0
+  webhook_url: null
