@@ -592,7 +592,7 @@ async function loadWaveModes() {
 // Apply wave mode
 async function applyWaveMode() {
   const mode = document.getElementById('waveModeSelect').value;
-  await fetch('/api/automation/wave-mode', {
+  await fetch('/api/automation/wave-modes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ mode })

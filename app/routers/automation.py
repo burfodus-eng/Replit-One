@@ -30,7 +30,7 @@ async def get_wave_modes(request: Request):
     }
 
 
-@router.post("/automation/wave-mode")
+@router.post("/automation/wave-modes")
 async def set_wave_mode(req: WaveModeRequest, request: Request):
     automation = request.app.state.automation
     success = automation.set_wave_mode(req.mode)
