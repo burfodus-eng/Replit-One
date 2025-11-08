@@ -1,0 +1,128 @@
+Project: Reef Controller — Arrays A1/A2/A3 with per-LED control, priority shedding, touch UI, pretty “weather-app” style, and load graphs.
+
+Goals:
+
+Rename arrays and add descriptions
+
+Arrays: A1 = “Acropora (SPS) Lights”, A2 = “LPS Lights”, A3 = “Center Lights”.
+
+Each array controls ~6 individual LEDs (ids L1..L6).
+
+Each LED has its own intensity limit (0–100%) and a priority index used for auto on/off shedding.
+
+Per-LED control + priority shedding
+
+Add a settings screen per array to edit: LED display name, intensity limit (0–100%), and priority order (drag to reorder).
+
+Implement shedding logic when bus/current budget is constrained:
+• Inputs: current PV power (W), battery charge state and limits, system power budget (W).
+• Auto mode: try to keep all LEDs on, respecting each LED’s intensity limit. If predicted total load exceeds budget, switch off LEDs in priority order (lowest priority first).
+• Restoration: when surplus power returns, re-enable LEDs in reverse order of shedding, with hysteresis (e.g., require 10% surplus margin for 10s before re-enabling).
+• Make the shedding/restore behavior deterministic and logged as events for the “Completed Tasks” panel.
+
+Home screen/UI upgrades for 14″ FHD touchscreen
+
+Visual style: simple “weather-app” aesthetic (soft cards, subtle gradient/glass/emboss), no heavy frameworks.
+
+Touch targets: minimum 48×48 CSS px; spacing 8–12 px; primary buttons ≥56×56; sliders tall enough for touch.
+
+Layout (1920×1080 target):
+• Header row: live clock (HH:MM), site name, tiny health indicator.
+• Main grid: three Array cards (A1/A2/A3). Each card shows:
+– Array title + description
+– A single “intensity” slider that maps to a global array duty (0–100%)
+– A compact visual of the 6 LEDs with mini indicators (on/off, intensity %, priority number) and a “Settings” icon → opens array settings modal.
+– Live telemetry snapshot: Vin, Iin, Vout, Iout, P = Vout×Iout.
+– Mini sparkline for array power (last 10–15 min). Clicking the card opens the full history chart.
+• Right rail (sidebar): “System Load” card with total PV input, total load, net to/from battery, and a tiny sparkline; “Upcoming Tasks”; “Completed Tasks”; “System Health/Error Report”.
+
+Sliders and simulated load behavior
+
+When an array’s main slider changes, POST to /api/control with {stage_id, mode: "MANUAL", duty: 0..1}.
+
+Simulate more realistic behavior:
+• For each array i, target current ≈ duty × (array_max_current).
+• Slight voltage droop at higher current (e.g., up to −8% at full load).
+• Per-LED intensity caps: array duty is an upper bound; each LED’s limit further caps its own contribution.
+
+Ensure the visible LED minis show their individual on/off state and capped intensity.
+
+Data model and endpoints (extend current API without breaking it)
+
+New config fields (config.yaml):
+stages.arrays[*]:
+id (A1/A2/A3), name, description, max_current_a, leds:
+- id (L1..L6), label, intensity_limit_pct (0–100), priority (1..6)
+power_budget: target_watts, restore_hysteresis_pct, restore_delay_s
+
+Backend: add simple “power allocator” service that:
+• Calculates predicted total load from current duties and LED caps.
+• If predicted load > available PV + allowed battery draw, shed LEDs by priority until within budget.
+• Emits events (shed/restore) to a small ring buffer and DB table.
+
+Endpoints to add:
+• GET /api/arrays → list arrays, LEDs, caps, priorities.
+• POST /api/arrays/{id}/settings → update names, caps, priorities.
+• GET /api/system/load → {pv_w, load_w, battery_w, net_w}.
+• GET /api/history/array/{id}?range=… → timeseries of P/V/I for charts.
+• GET /api/events?limit=… → recent shed/restore/alerts.
+(Keep existing /api/status, /api/snapshot, /api/control working.)
+
+Example simulator values (use as defaults)
+
+PV input (total): 0–600 W (simulate diurnal curve; clouds ±30% swings).
+
+Array maxima (used for mapping duty to current):
+• A1 max_current_a = 4.0 A, nominal Vout 36 V (max ≈145 W)
+• A2 max_current_a = 3.0 A, nominal Vout 32 V (max ≈96 W)
+• A3 max_current_a = 2.5 A, nominal Vout 28 V (max ≈70 W)
+
+Per-LED split: divide each array’s current among on LEDs, capped by LED intensity_limit_pct.
+
+Voltage droop model: vout = v_nominal × (1 − 0.08 × load_fraction).
+
+Battery: allow discharge up to 150 W when PV is insufficient; charge when PV surplus >50 W; log low-battery warnings at <12.2 V.
+
+Graphs
+
+On each Array card: 1 small sparkline of array power (last ~15 min).
+
+Click card → modal with full chart (V, I, P; selectable 1h/6h/24h).
+
+Right rail: small sparkline for total PV input; click to open overall system history.
+
+Use the existing SQLite telemetry; add simple /api/history endpoints that return compact arrays of {t, v, i, p}.
+
+System Health/Error Report
+
+Display: Green “OK” when no alerts; Yellow for warnings (battery low, panel offline for >2 min, sensor stale >10 s); Red for critical (budget exceeded with no LEDs left to shed, DB write errors).
+
+Alerts also appended to the events feed (GET /api/events).
+
+Touch and visual polish
+
+Touch targets ≥48×48 CSS px; primary controls ≥56×56.
+
+Slider thumbs large and easy to grab; labels ≥14–16 px; critical numbers ≥18–20 px.
+
+Use subtle gradient or frosted-glass background (single static asset), soft shadows, rounded 16–20 px cards.
+
+Keep assets light; no external UI frameworks; stick to vanilla HTML/CSS/JS.
+
+Keep Replit compatibility
+
+All features must run in simulation mode on Replit. No Pi-only dependencies.
+
+Deterministic mode switch: allow a fixed RNG seed and/or scripted “diurnal” profile for repeatable tests.
+
+Log shed/restore events and make them visible immediately in the sidebar.
+
+Deliverables:
+
+Updated index.html (cards, sidebar, modals), small CSS polish (inline or separate), minimal JS updates for sliders, settings modals, history popups.
+
+New backend endpoints and a simple power allocator that implements shedding and restoration with hysteresis.
+
+Config and simulator updates reflecting the values above.
+
+Brief README note on how to use the new settings and test shedding (e.g., set low budget to force shedding).

@@ -1,676 +1,873 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reef Controller</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #0a1929 0%, #1a2332 100%);
-  color: #e0e7ff;
-  min-height: 100vh;
-  padding: 1rem;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reef Controller</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-.container { max-width: 1400px; margin: 0 auto; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      min-height: 100vh;
+      color: #2d3748;
+      overflow-x: hidden;
+    }
 
-/* Header */
-.header {
-  background: linear-gradient(135deg, #1e3a5f 0%, #2a4a6f 100%);
-  padding: 1.5rem 2rem;
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+    .container {
+      max-width: 1920px;
+      margin: 0 auto;
+      padding: 16px;
+    }
 
-.header h1 {
-  color: #60a5fa;
-  font-size: 2rem;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
 
-.time-display {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: #93c5fd;
-}
+    .site-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #667eea;
+    }
 
-/* Grid Layout */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
+    .live-clock {
+      font-size: 24px;
+      font-weight: 600;
+      color: #4a5568;
+    }
 
-/* Cards */
-.card {
-  background: linear-gradient(135deg, #1e293b 0%, #2a3548 100%);
-  border: 1px solid #374151;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
+    .health-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 16px;
+      min-height: 56px;
+    }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
-}
+    .health-ok { background: #48bb78; color: white; }
+    .health-warning { background: #ed8936; color: white; }
+    .health-critical { background: #f56565; color: white; }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #374151;
-}
+    .main-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 20px;
+    }
 
-.card-header h3 {
-  color: #60a5fa;
-  font-size: 1.25rem;
-}
+    .arrays-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 20px;
+    }
 
-.badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
 
-.badge.on { background: #10b981; color: white; }
-.badge.off { background: #6b7280; color: white; }
-.badge.auto { background: #3b82f6; color: white; }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+    }
 
-/* LED Controls */
-.led-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 16px;
+    }
 
-.slider-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
+    .array-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 4px;
+    }
 
-.slider-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.9rem;
-  color: #cbd5e1;
-}
+    .array-description {
+      font-size: 14px;
+      color: #718096;
+    }
 
-.intensity-value {
-  background: rgba(59, 130, 246, 0.2);
-  padding: 0.25rem 0.75rem;
-  border-radius: 6px;
-  color: #60a5fa;
-  font-weight: 600;
-  min-width: 60px;
-  text-align: center;
-}
+    .settings-btn {
+      min-width: 56px;
+      min-height: 56px;
+      border: none;
+      background: #667eea;
+      color: white;
+      border-radius: 12px;
+      font-size: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
 
-.slider {
-  width: 100%;
-  height: 8px;
-  border-radius: 4px;
-  background: #374151;
-  outline: none;
-  -webkit-appearance: none;
-}
+    .settings-btn:hover {
+      background: #5a67d8;
+    }
 
-.slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
-}
+    .slider-container {
+      margin: 20px 0;
+    }
 
-.slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
-}
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 16px;
+      font-weight: 600;
+    }
 
-/* Telemetry */
-.telemetry {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #374151;
-}
+    .slider {
+      width: 100%;
+      height: 56px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: linear-gradient(to right, #e2e8f0, #667eea);
+      border-radius: 12px;
+      outline: none;
+      cursor: pointer;
+    }
 
-.telemetry-item {
-  background: rgba(0, 0, 0, 0.2);
-  padding: 0.75rem;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 32px;
+      height: 56px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+    }
 
-.telemetry-label {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  text-transform: uppercase;
-  font-weight: 600;
-}
+    .slider::-moz-range-thumb {
+      width: 32px;
+      height: 56px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      border: none;
+    }
 
-.telemetry-value {
-  font-size: 1.25rem;
-  color: #e0e7ff;
-  font-weight: 600;
-}
+    .leds-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
 
-/* Controls */
-.controls {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  flex-wrap: wrap;
-}
+    .led-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      background: #f7fafc;
+      border-radius: 12px;
+      min-height: 80px;
+    }
 
-select, button {
-  padding: 0.5rem 1rem;
-  border: 1px solid #374151;
-  border-radius: 8px;
-  background: #1e293b;
-  color: #e0e7ff;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
+    .led-status {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      margin-bottom: 8px;
+    }
 
-select:hover, button:hover {
-  background: #2a3548;
-  border-color: #60a5fa;
-}
+    .led-on { background: #48bb78; box-shadow: 0 0 12px #48bb78; }
+    .led-off { background: #cbd5e0; }
 
-button.primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-  border: none;
-  font-weight: 600;
-}
+    .led-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #4a5568;
+      text-align: center;
+      margin-bottom: 4px;
+    }
 
-button.primary:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-}
+    .led-intensity {
+      font-size: 14px;
+      color: #718096;
+    }
 
-/* Wave Mode */
-.wave-mode-selector {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
+    .led-priority {
+      font-size: 11px;
+      color: #a0aec0;
+    }
 
-.wave-mode-selector select {
-  flex: 1;
-}
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+      padding: 16px;
+      background: #f7fafc;
+      border-radius: 12px;
+    }
 
-/* Tasks */
-.task-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
+    .telemetry-item {
+      display: flex;
+      flex-direction: column;
+    }
 
-.task-item {
-  background: rgba(0, 0, 0, 0.2);
-  padding: 1rem;
-  border-radius: 8px;
-  border-left: 4px solid transparent;
-}
+    .telemetry-label {
+      font-size: 12px;
+      color: #718096;
+      margin-bottom: 4px;
+    }
 
-.task-item.completed { border-left-color: #10b981; }
-.task-item.upcoming { border-left-color: #f59e0b; }
+    .telemetry-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2d3748;
+    }
 
-.task-name {
-  font-weight: 600;
-  color: #e0e7ff;
-  margin-bottom: 0.25rem;
-}
+    .sparkline-container {
+      height: 60px;
+      background: #f7fafc;
+      border-radius: 12px;
+      margin-top: 16px;
+      position: relative;
+      overflow: hidden;
+    }
 
-.task-time {
-  font-size: 0.85rem;
-  color: #94a3b8;
-}
+    .sparkline-canvas {
+      width: 100%;
+      height: 100%;
+    }
 
-.task-eta {
-  display: inline-block;
-  margin-left: 0.5rem;
-  padding: 0.125rem 0.5rem;
-  background: rgba(245, 158, 11, 0.2);
-  border-radius: 4px;
-  color: #fbbf24;
-  font-size: 0.75rem;
-}
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
 
-/* System Health */
-.health-card {
-  border-left: 4px solid;
-}
+    .sidebar-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
 
-.health-card.ok { border-left-color: #10b981; }
-.health-card.warning { border-left-color: #f59e0b; }
-.health-card.error { border-left-color: #ef4444; }
+    .sidebar-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #2d3748;
+    }
 
-.health-status {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
+    .load-stats {
+      display: grid;
+      gap: 12px;
+    }
 
-.status-indicator {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
+    .load-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f7fafc;
+      border-radius: 8px;
+    }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
+    .load-label {
+      font-size: 14px;
+      color: #718096;
+    }
 
-.health-messages {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
+    .load-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2d3748;
+    }
 
-.health-message {
-  padding: 0.5rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-}
+    .task-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
 
-.health-message.error {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-}
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: #f7fafc;
+      border-radius: 8px;
+      min-height: 56px;
+    }
 
-.health-message.warning {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
-}
+    .task-item.completed {
+      opacity: 0.7;
+      border-left: 4px solid #48bb78;
+    }
 
-.health-message.info {
-  background: rgba(16, 185, 129, 0.2);
-  color: #6ee7b7;
-}
+    .task-item.upcoming {
+      border-left: 4px solid #4299e1;
+    }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .grid { grid-template-columns: 1fr; }
-  .header { flex-direction: column; gap: 1rem; text-align: center; }
-}
-</style>
+    .task-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #2d3748;
+    }
+
+    .task-time {
+      font-size: 12px;
+      color: #718096;
+    }
+
+    .task-eta {
+      display: block;
+      font-size: 11px;
+      color: #4299e1;
+      margin-top: 2px;
+    }
+
+    .event-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .event-item {
+      padding: 12px;
+      margin-bottom: 8px;
+      background: #f7fafc;
+      border-radius: 8px;
+      border-left: 4px solid #cbd5e0;
+    }
+
+    .event-item.shed { border-left-color: #f56565; }
+    .event-item.restore { border-left-color: #48bb78; }
+    .event-item.warning { border-left-color: #ed8936; }
+    .event-item.alert { border-left-color: #e53e3e; }
+
+    .event-message {
+      font-size: 14px;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 4px;
+    }
+
+    .event-time {
+      font-size: 11px;
+      color: #718096;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #2d3748;
+    }
+
+    .close-btn {
+      min-width: 56px;
+      min-height: 56px;
+      border: none;
+      background: #e2e8f0;
+      color: #4a5568;
+      border-radius: 12px;
+      font-size: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .close-btn:hover {
+      background: #cbd5e0;
+    }
+
+    .led-settings-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .led-setting-item {
+      display: grid;
+      grid-template-columns: 100px 1fr 100px;
+      gap: 16px;
+      padding: 16px;
+      background: #f7fafc;
+      border-radius: 12px;
+      align-items: center;
+    }
+
+    .input-field {
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+      min-height: 48px;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .save-btn {
+      width: 100%;
+      min-height: 56px;
+      border: none;
+      background: #667eea;
+      color: white;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 24px;
+    }
+
+    .save-btn:hover {
+      background: #5a67d8;
+    }
+
+    .chart-container {
+      height: 400px;
+      margin: 24px 0;
+    }
+
+    @media (max-width: 1600px) {
+      .main-layout {
+        grid-template-columns: 1fr 350px;
+      }
+    }
+
+    @media (max-width: 1200px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .arrays-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
-
-<div class="container">
-  <div class="header">
-    <h1>🌊 Reef Controller</h1>
-    <div class="time-display" id="currentTime">Loading...</div>
-  </div>
-
-  <!-- LED Array Cards -->
-  <div class="grid" id="ledCards"></div>
-
-  <!-- Bottom Section -->
-  <div class="grid">
-    <!-- Battery Card -->
-    <div class="card" id="batteryCard"></div>
-
-    <!-- Wave Mode Card -->
-    <div class="card">
-      <div class="card-header">
-        <h3>💨 Wave Mode</h3>
+  <div class="container">
+    <header>
+      <div class="site-title">🪸 Reef Controller</div>
+      <div class="live-clock" id="liveClock">--:--:--</div>
+      <div class="health-indicator health-ok" id="healthIndicator">
+        <span>●</span>
+        <span id="healthText">System OK</span>
       </div>
-      <div class="wave-mode-selector">
-        <select id="waveModeSelect"></select>
-        <button class="primary" onclick="applyWaveMode()">Apply</button>
-      </div>
-    </div>
+    </header>
 
-    <!-- System Health Card -->
-    <div class="card health-card" id="healthCard">
-      <div class="card-header">
-        <h3>🏥 System Health</h3>
-        <div class="health-status" id="healthStatus"></div>
-      </div>
-      <div class="health-messages" id="healthMessages"></div>
-    </div>
-  </div>
+    <div class="main-layout">
+      <div class="arrays-grid" id="arraysGrid"></div>
 
-  <!-- Tasks Section -->
-  <div class="grid">
-    <!-- Completed Tasks -->
-    <div class="card">
-      <div class="card-header">
-        <h3>✅ Completed Tasks</h3>
-      </div>
-      <div class="task-list" id="completedTasks"></div>
-    </div>
+      <div class="sidebar">
+        <div class="sidebar-card">
+          <div class="sidebar-title">System Load</div>
+          <div class="load-stats" id="loadStats"></div>
+          <div class="sparkline-container">
+            <canvas class="sparkline-canvas" id="pvSparkline"></canvas>
+          </div>
+        </div>
 
-    <!-- Upcoming Tasks -->
-    <div class="card">
-      <div class="card-header">
-        <h3>⏰ Upcoming Tasks</h3>
+        <div class="sidebar-card">
+          <div class="sidebar-title">Upcoming Tasks</div>
+          <div class="task-list" id="upcomingTasks"></div>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="sidebar-title">Completed Tasks</div>
+          <div class="task-list" id="completedTasks"></div>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="sidebar-title">Recent Events</div>
+          <div class="event-list" id="eventsList"></div>
+        </div>
       </div>
-      <div class="task-list" id="upcomingTasks"></div>
     </div>
   </div>
-</div>
 
-<script>
-let stages = [];
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="settingsModalTitle">LED Settings</div>
+        <button class="close-btn" onclick="closeSettingsModal()">✕</button>
+      </div>
+      <div class="led-settings-list" id="ledSettingsList"></div>
+      <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
 
-// Update time display
-function updateTime() {
-  const now = new Date();
-  const options = { 
-    weekday: 'short', 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric', 
-    hour: '2-digit', 
-    minute: '2-digit', 
-    second: '2-digit' 
-  };
-  document.getElementById('currentTime').textContent = now.toLocaleString('en-US', options);
-}
+  <div class="modal" id="historyModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="historyModalTitle">Array History</div>
+        <button class="close-btn" onclick="closeHistoryModal()">✕</button>
+      </div>
+      <div class="chart-container">
+        <canvas id="historyChart"></canvas>
+      </div>
+    </div>
+  </div>
 
-// Load stage status
-async function loadStatus() {
-  try {
-    const res = await fetch('/api/status');
-    const data = await res.json();
-    stages = data;
-    
-    const ledCardsContainer = document.getElementById('ledCards');
-    ledCardsContainer.innerHTML = '';
-    
-    data.forEach(s => {
-      if (s.stage_id.includes('Array')) {
-        const card = createLEDCard(s);
-        ledCardsContainer.appendChild(card);
-      } else if (s.stage_id === 'Battery') {
-        updateBatteryCard(s);
+  <script>
+    let arraysData = [];
+    let currentSettingsArrayId = null;
+    let updateInterval = null;
+
+    function updateClock() {
+      const now = new Date();
+      const time = now.toLocaleTimeString('en-US', { hour12: false });
+      document.getElementById('liveClock').textContent = time;
+    }
+
+    async function loadArrays() {
+      try {
+        const res = await fetch('/api/arrays');
+        const data = await res.json();
+        arraysData = data.arrays;
+        renderArrays();
+      } catch (err) {
+        console.error('Failed to load arrays:', err);
       }
-    });
-  } catch (err) {
-    console.error('Failed to load status:', err);
-  }
-}
+    }
 
-// Create LED card
-function createLEDCard(stage) {
-  const card = document.createElement('div');
-  card.className = 'card';
-  card.id = `card-${stage.stage_id}`;
-  
-  const intensityPercent = Math.round(stage.duty * 100);
-  const statusBadge = stage.enabled ? 
-    `<span class="badge ${stage.mode.toLowerCase()}">${stage.mode}</span>` : 
-    `<span class="badge off">OFF</span>`;
-  
-  card.innerHTML = `
-    <div class="card-header">
-      <h3>💡 ${stage.stage_id}</h3>
-      ${statusBadge}
-    </div>
-    
-    <div class="led-controls">
-      <div class="slider-group">
-        <div class="slider-label">
-          <span>Light Intensity</span>
-          <span class="intensity-value" id="intensity-${stage.stage_id}">${intensityPercent}%</span>
+    function renderArrays() {
+      const grid = document.getElementById('arraysGrid');
+      grid.innerHTML = arraysData.map(array => `
+        <div class="card" onclick="showHistory('${array.id}')">
+          <div class="card-header">
+            <div>
+              <div class="array-title">${array.name}</div>
+              <div class="array-description">${array.description}</div>
+            </div>
+            <button class="settings-btn" onclick="event.stopPropagation(); showSettings('${array.id}')">⚙</button>
+          </div>
+
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Intensity</span>
+              <span id="duty-${array.id}">${Math.round(array.duty * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              class="slider"
+              min="0"
+              max="100"
+              value="${Math.round(array.duty * 100)}"
+              id="slider-${array.id}"
+              onchange="updateDuty('${array.id}', this.value)"
+              onclick="event.stopPropagation()"
+            >
+          </div>
+
+          <div class="leds-grid">
+            ${array.leds.map(led => `
+              <div class="led-indicator">
+                <div class="led-status ${led.is_on ? 'led-on' : 'led-off'}"></div>
+                <div class="led-label">${led.label}</div>
+                <div class="led-intensity">${Math.round(led.current_intensity_pct)}%</div>
+                <div class="led-priority">P${led.priority}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="telemetry-grid">
+            <div class="telemetry-item">
+              <span class="telemetry-label">Input Voltage</span>
+              <span class="telemetry-value">${array.vin_v.toFixed(1)} V</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Input Current</span>
+              <span class="telemetry-value">${array.iin_a.toFixed(2)} A</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Output Voltage</span>
+              <span class="telemetry-value">${array.vout_v.toFixed(1)} V</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Output Current</span>
+              <span class="telemetry-value">${array.iout_a.toFixed(2)} A</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Power</span>
+              <span class="telemetry-value">${array.power_w.toFixed(1)} W</span>
+            </div>
+          </div>
+
+          <div class="sparkline-container">
+            <canvas class="sparkline-canvas" id="sparkline-${array.id}"></canvas>
+          </div>
         </div>
-        <input 
-          type="range" 
-          class="slider" 
-          id="slider-${stage.stage_id}" 
-          min="0" 
-          max="100" 
-          value="${intensityPercent}"
-          oninput="updateIntensity('${stage.stage_id}', this.value)"
-          onchange="applyIntensity('${stage.stage_id}', this.value)"
-        >
-      </div>
+      `).join('');
+    }
+
+    async function updateDuty(arrayId, value) {
+      const duty = value / 100.0;
+      document.getElementById(`duty-${arrayId}`).textContent = `${value}%`;
       
-      <div class="controls">
-        <select id="mode-${stage.stage_id}">
-          <option ${stage.mode === 'OFF' ? 'selected' : ''}>OFF</option>
-          <option ${stage.mode === 'MANUAL' ? 'selected' : ''}>MANUAL</option>
-          <option ${stage.mode === 'AUTO' ? 'selected' : ''}>AUTO</option>
-          <option ${stage.mode === 'REDUNDANT' ? 'selected' : ''}>REDUNDANT</option>
-        </select>
-        <label style="display: flex; align-items: center; gap: 0.5rem; color: #cbd5e1;">
-          <input type="checkbox" id="en-${stage.stage_id}" ${stage.enabled ? 'checked' : ''}>
-          Enable
-        </label>
-        <button class="primary" onclick="applyControls('${stage.stage_id}')">Apply</button>
-      </div>
-    </div>
-    
-    <div class="telemetry" id="tele-${stage.stage_id}"></div>
-  `;
-  
-  return card;
-}
+      try {
+        await fetch('/api/control', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            stage_id: arrayId,
+            mode: 'MANUAL',
+            duty: duty
+          })
+        });
+        await loadArrays();
+      } catch (err) {
+        console.error('Failed to update duty:', err);
+      }
+    }
 
-// Update battery card
-function updateBatteryCard(stage) {
-  const batteryCard = document.getElementById('batteryCard');
-  const statusBadge = stage.enabled ? 
-    `<span class="badge ${stage.mode.toLowerCase()}">${stage.mode}</span>` : 
-    `<span class="badge off">OFF</span>`;
-    
-  batteryCard.innerHTML = `
-    <div class="card-header">
-      <h3>🔋 Battery</h3>
-      ${statusBadge}
-    </div>
-    <div class="telemetry" id="tele-Battery"></div>
-  `;
-}
+    async function loadSystemLoad() {
+      try {
+        const res = await fetch('/api/system/load');
+        const data = await res.json();
+        
+        const stats = document.getElementById('loadStats');
+        stats.innerHTML = `
+          <div class="load-stat">
+            <span class="load-label">PV Input</span>
+            <span class="load-value">${data.pv_w.toFixed(0)} W</span>
+          </div>
+          <div class="load-stat">
+            <span class="load-label">Total Load</span>
+            <span class="load-value">${data.load_w.toFixed(0)} W</span>
+          </div>
+          <div class="load-stat">
+            <span class="load-label">Battery</span>
+            <span class="load-value">${data.battery_w.toFixed(0)} W</span>
+          </div>
+          <div class="load-stat">
+            <span class="load-label">Budget</span>
+            <span class="load-value">${data.budget_w.toFixed(0)} W</span>
+          </div>
+        `;
+      } catch (err) {
+        console.error('Failed to load system load:', err);
+      }
+    }
 
-// Update intensity display
-function updateIntensity(stageId, value) {
-  document.getElementById(`intensity-${stageId}`).textContent = `${value}%`;
-}
+    async function loadTasks() {
+      try {
+        const [completed, upcoming] = await Promise.all([
+          fetch('/api/automation/tasks/completed').then(r => r.json()),
+          fetch('/api/automation/tasks/upcoming').then(r => r.json())
+        ]);
+        
+        document.getElementById('completedTasks').innerHTML = completed.slice(0, 5).map(task => `
+          <div class="task-item completed">
+            <div class="task-name">${task.name}</div>
+            <div class="task-time">${task.time}</div>
+          </div>
+        `).join('') || '<p style="color: #a0aec0;">No completed tasks</p>';
+        
+        document.getElementById('upcomingTasks').innerHTML = upcoming.slice(0, 5).map(task => `
+          <div class="task-item upcoming">
+            <div class="task-name">${task.name}</div>
+            <div class="task-time">
+              ${task.time}
+              <span class="task-eta">in ${task.eta_minutes} min</span>
+            </div>
+          </div>
+        `).join('') || '<p style="color: #a0aec0;">No upcoming tasks</p>';
+      } catch (err) {
+        console.error('Failed to load tasks:', err);
+      }
+    }
 
-// Apply intensity change
-async function applyIntensity(stageId, value) {
-  const duty = value / 100;
-  await fetch('/api/control', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      stage_id: stageId,
-      mode: document.getElementById(`mode-${stageId}`).value,
-      duty: duty,
-      enable: document.getElementById(`en-${stageId}`).checked
-    })
-  });
-  await loadStatus();
-}
+    async function loadEvents() {
+      try {
+        const res = await fetch('/api/events?limit=10');
+        const data = await res.json();
+        
+        document.getElementById('eventsList').innerHTML = data.events.map(event => `
+          <div class="event-item ${event.event_type}">
+            <div class="event-message">${event.message}</div>
+            <div class="event-time">${new Date(event.timestamp).toLocaleString()}</div>
+          </div>
+        `).join('') || '<p style="color: #a0aec0;">No recent events</p>';
+      } catch (err) {
+        console.error('Failed to load events:', err);
+      }
+    }
 
-// Apply controls
-async function applyControls(stageId) {
-  const slider = document.getElementById(`slider-${stageId}`);
-  const duty = slider.value / 100;
-  
-  await fetch('/api/control', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      stage_id: stageId,
-      mode: document.getElementById(`mode-${stageId}`).value,
-      duty: duty,
-      enable: document.getElementById(`en-${stageId}`).checked
-    })
-  });
-  await loadStatus();
-}
+    async function loadSystemHealth() {
+      try {
+        const res = await fetch('/api/system/health');
+        const data = await res.json();
+        
+        const indicator = document.getElementById('healthIndicator');
+        const text = document.getElementById('healthText');
+        
+        indicator.className = 'health-indicator';
+        if (data.status === 'ok') {
+          indicator.classList.add('health-ok');
+          text.textContent = 'System OK';
+        } else if (data.status === 'warning') {
+          indicator.classList.add('health-warning');
+          text.textContent = `${data.warnings.length} Warning(s)`;
+        } else {
+          indicator.classList.add('health-critical');
+          text.textContent = `${data.errors.length} Error(s)`;
+        }
+      } catch (err) {
+        console.error('Failed to load health:', err);
+      }
+    }
 
-// Refresh telemetry
-async function refreshTelemetry() {
-  try {
-    const res = await fetch('/api/snapshot');
-    const data = await res.json();
-    
-    data.forEach(r => {
-      const tele = document.getElementById(`tele-${r.stage_id}`);
-      if (!tele) return;
+    function showSettings(arrayId) {
+      const array = arraysData.find(a => a.id === arrayId);
+      if (!array) return;
       
-      tele.innerHTML = `
-        <div class="telemetry-item">
-          <span class="telemetry-label">Input Voltage</span>
-          <span class="telemetry-value">${r.vin_v.toFixed(2)} V</span>
+      currentSettingsArrayId = arrayId;
+      document.getElementById('settingsModalTitle').textContent = `${array.name} - LED Settings`;
+      
+      const list = document.getElementById('ledSettingsList');
+      list.innerHTML = array.leds.map(led => `
+        <div class="led-setting-item">
+          <div style="font-weight: 600; color: #4a5568;">${led.id}</div>
+          <input
+            type="text"
+            class="input-field"
+            value="${led.label}"
+            id="label-${led.id}"
+            placeholder="LED Label"
+          >
+          <input
+            type="number"
+            class="input-field"
+            value="${led.intensity_limit_pct}"
+            id="limit-${led.id}"
+            min="0"
+            max="100"
+            placeholder="%"
+          >
         </div>
-        <div class="telemetry-item">
-          <span class="telemetry-label">Input Current</span>
-          <span class="telemetry-value">${r.iin_a.toFixed(2)} A</span>
-        </div>
-        <div class="telemetry-item">
-          <span class="telemetry-label">Output Voltage</span>
-          <span class="telemetry-value">${r.vout_v.toFixed(2)} V</span>
-        </div>
-        <div class="telemetry-item">
-          <span class="telemetry-label">Output Current</span>
-          <span class="telemetry-value">${r.iout_a.toFixed(2)} A</span>
-        </div>
-      `;
-    });
-  } catch (err) {
-    console.error('Failed to refresh telemetry:', err);
-  }
-}
+      `).join('');
+      
+      document.getElementById('settingsModal').classList.add('active');
+    }
 
-// Load wave modes
-async function loadWaveModes() {
-  try {
-    const res = await fetch('/api/automation/wave-modes');
-    const data = await res.json();
-    
-    const select = document.getElementById('waveModeSelect');
-    select.innerHTML = data.modes.map(mode => 
-      `<option ${mode === data.current ? 'selected' : ''}>${mode}</option>`
-    ).join('');
-  } catch (err) {
-    console.error('Failed to load wave modes:', err);
-  }
-}
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.remove('active');
+      currentSettingsArrayId = null;
+    }
 
-// Apply wave mode
-async function applyWaveMode() {
-  const mode = document.getElementById('waveModeSelect').value;
-  await fetch('/api/automation/wave-modes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mode })
-  });
-}
+    async function saveSettings() {
+      if (!currentSettingsArrayId) return;
+      
+      const array = arraysData.find(a => a.id === currentSettingsArrayId);
+      if (!array) return;
+      
+      const updates = {};
+      array.leds.forEach(led => {
+        updates[led.id] = {
+          label: document.getElementById(`label-${led.id}`).value,
+          intensity_limit_pct: parseInt(document.getElementById(`limit-${led.id}`).value)
+        };
+      });
+      
+      try {
+        await fetch(`/api/arrays/${currentSettingsArrayId}/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leds: updates })
+        });
+        
+        closeSettingsModal();
+        await loadArrays();
+      } catch (err) {
+        console.error('Failed to save settings:', err);
+      }
+    }
 
-// Load tasks
-async function loadTasks() {
-  try {
-    const [completed, upcoming] = await Promise.all([
-      fetch('/api/automation/tasks/completed').then(r => r.json()),
-      fetch('/api/automation/tasks/upcoming').then(r => r.json())
-    ]);
-    
-    document.getElementById('completedTasks').innerHTML = completed.map(task => `
-      <div class="task-item completed">
-        <div class="task-name">${task.name}</div>
-        <div class="task-time">${task.time}</div>
-      </div>
-    `).join('');
-    
-    document.getElementById('upcomingTasks').innerHTML = upcoming.map(task => `
-      <div class="task-item upcoming">
-        <div class="task-name">${task.name}</div>
-        <div class="task-time">
-          ${task.time}
-          <span class="task-eta">in ${task.eta_minutes} min</span>
-        </div>
-      </div>
-    `).join('');
-  } catch (err) {
-    console.error('Failed to load tasks:', err);
-  }
-}
+    function showHistory(arrayId) {
+      const array = arraysData.find(a => a.id === arrayId);
+      if (!array) return;
+      
+      document.getElementById('historyModalTitle').textContent = `${array.name} - History`;
+      document.getElementById('historyModal').classList.add('active');
+    }
 
-// Load system health
-async function loadSystemHealth() {
-  try {
-    const res = await fetch('/api/system/health');
-    const health = await res.json();
-    
-    const card = document.getElementById('healthCard');
-    card.className = `card health-card ${health.status}`;
-    
-    const statusHtml = `
-      <span class="status-indicator" style="background: ${health.color}"></span>
-      <span style="text-transform: uppercase; font-weight: 600;">${health.status}</span>
-    `;
-    document.getElementById('healthStatus').innerHTML = statusHtml;
-    
-    const messages = [
-      ...health.errors.map(msg => `<div class="health-message error">❌ ${msg}</div>`),
-      ...health.warnings.map(msg => `<div class="health-message warning">⚠️ ${msg}</div>`),
-      ...health.info.map(msg => `<div class="health-message info">✅ ${msg}</div>`)
-    ];
-    
-    document.getElementById('healthMessages').innerHTML = messages.join('');
-  } catch (err) {
-    console.error('Failed to load system health:', err);
-  }
-}
+    function closeHistoryModal() {
+      document.getElementById('historyModal').classList.remove('active');
+    }
 
-// Initialize
-async function init() {
-  updateTime();
-  setInterval(updateTime, 1000);
-  
-  await loadStatus();
-  await loadWaveModes();
-  await loadTasks();
-  await loadSystemHealth();
-  
-  setInterval(refreshTelemetry, 1000);
-  setInterval(loadSystemHealth, 5000);
-}
+    async function refreshAll() {
+      await Promise.all([
+        loadArrays(),
+        loadSystemLoad(),
+        loadTasks(),
+        loadEvents(),
+        loadSystemHealth()
+      ]);
+    }
 
-init();
-</script>
+    function init() {
+      updateClock();
+      setInterval(updateClock, 1000);
+      
+      refreshAll();
+      updateInterval = setInterval(refreshAll, 2000);
+    }
 
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
 </body>
 </html>

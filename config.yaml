@@ -5,44 +5,149 @@ site:
 
 stages:
   arrays:
-    - id: "A"
+    - id: "A1"
+      name: "Acropora (SPS) Lights"
+      description: "High-intensity lighting for SPS corals"
       enabled: true
       auto: true
       pwm_channel: 0
-      target_lux: 15000
+      max_current_a: 4.0
+      nominal_voltage_v: 36.0
       timer:
         on: "08:00"
         off: "20:30"
-    - id: "B"
+      leds:
+        - id: "L1"
+          label: "Front Blue"
+          intensity_limit_pct: 100
+          priority: 1
+        - id: "L2"
+          label: "Front White"
+          intensity_limit_pct: 100
+          priority: 2
+        - id: "L3"
+          label: "Center Blue"
+          intensity_limit_pct: 90
+          priority: 3
+        - id: "L4"
+          label: "Center White"
+          intensity_limit_pct: 90
+          priority: 4
+        - id: "L5"
+          label: "Rear Blue"
+          intensity_limit_pct: 80
+          priority: 5
+        - id: "L6"
+          label: "Rear White"
+          intensity_limit_pct: 80
+          priority: 6
+    
+    - id: "A2"
+      name: "LPS Lights"
+      description: "Medium-intensity lighting for LPS corals"
       enabled: true
       auto: true
       pwm_channel: 1
-      target_lux: 15000
+      max_current_a: 3.0
+      nominal_voltage_v: 32.0
       timer:
         on: "08:15"
         off: "20:45"
-    - id: "C"
+      leds:
+        - id: "L1"
+          label: "Front Blue"
+          intensity_limit_pct: 100
+          priority: 1
+        - id: "L2"
+          label: "Front White"
+          intensity_limit_pct: 85
+          priority: 2
+        - id: "L3"
+          label: "Center Blue"
+          intensity_limit_pct: 85
+          priority: 3
+        - id: "L4"
+          label: "Center White"
+          intensity_limit_pct: 75
+          priority: 4
+        - id: "L5"
+          label: "Rear Blue"
+          intensity_limit_pct: 75
+          priority: 5
+        - id: "L6"
+          label: "Rear White"
+          intensity_limit_pct: 70
+          priority: 6
+    
+    - id: "A3"
+      name: "Center Lights"
+      description: "Ambient lighting for center display"
       enabled: true
       auto: true
       pwm_channel: 2
-      target_lux: 15000
+      max_current_a: 2.5
+      nominal_voltage_v: 28.0
       timer:
         on: "08:30"
         off: "21:00"
+      leds:
+        - id: "L1"
+          label: "Front Actinic"
+          intensity_limit_pct: 100
+          priority: 1
+        - id: "L2"
+          label: "Front Daylight"
+          intensity_limit_pct: 90
+          priority: 2
+        - id: "L3"
+          label: "Center Actinic"
+          intensity_limit_pct: 80
+          priority: 3
+        - id: "L4"
+          label: "Center Daylight"
+          intensity_limit_pct: 80
+          priority: 4
+        - id: "L5"
+          label: "Rear Actinic"
+          intensity_limit_pct: 70
+          priority: 5
+        - id: "L6"
+          label: "Rear Daylight"
+          intensity_limit_pct: 70
+          priority: 6
+  
   battery:
     enabled: true
     charge_limit_v: 14.2
     float_v: 13.6
     discharge_cutoff_v: 12.0
     reserve_minutes: 60
+    max_discharge_w: 150
+    min_charge_surplus_w: 50
+
+
+power_budget:
+  target_watts: 400
+  restore_hysteresis_pct: 10
+  restore_delay_s: 10
+  pv_max_w: 600
+
+
+simulator:
+  pv_diurnal_enabled: true
+  pv_cloud_variation_pct: 30
+  deterministic_seed: null
 
 
 telemetry:
   sample_interval_ms: 1000
   persist_every_s: 10
+  history_retention_hours: 48
 
 
 alerts:
   low_battery_v: 12.2
   high_panel_v: 85.0
+  sensor_stale_s: 10
+  panel_offline_s: 120
   webhook_url: null
