@@ -1,0 +1,93 @@
+Project: Reef Controller — UI/UX + history fixes
+
+Remove hover “bounce” on array cards
+
+Disable any hover transform/scale/animation on array cards.
+
+Keep subtle hover highlight only (e.g., border or shadow), no movement.
+
+Fix intensity slider reset & define behavior
+
+Bug: master slider resets to 0 after change (likely due to snapshot refresh overwriting UI state).
+
+Fix:
+
+Use “cap & scale” rule: effective LED duty = master_duty × (led_limit_pct / 100).
+
+After POST to /api/control, update local UI immediately and do not overwrite with /api/snapshot for 1–2 seconds (debounce).
+
+Also persist master_duty server-side in stage state so subsequent snapshots reflect the new value.
+
+Acceptance test: set Master=50%, per-LED limits 100% → all show 50%. Set LED3 limit=20% → with Master=100%, LED3 stays at 20%.
+
+Layout: fit 1920×1200 (16:10) landscape without overflow
+
+Target: main dashboard fits 1920×1200 without scroll for default zoom.
+
+Implement CSS grid with responsive columns; reduce paddings/margins; card widths auto-fit.
+
+Touch targets ≥48×48 CSS px still.
+
+No horizontal scroll; vertical page fits within 1200 px.
+
+History views currently blank — wire them up to real data
+
+Use the existing SQLite telemetry table to return time series.
+
+Add endpoints:
+
+GET /api/history/array/{id}?range={1h|6h|24h} → returns arrays of {t, v, i, p}.
+
+GET /api/history/system?range=... → total pv_w, load_w, battery_w timeseries.
+
+On click of “history” for a light/power card, open a modal with a wide line chart (~80% width of viewport).
+
+Render last N points (downsample if needed). No blank page.
+
+Track dummy inputs so we can visualize now
+
+The simulator already generates PV and array outputs; persist every snapshot (already happening) and query by time range for charts.
+
+Add a simple downsample (e.g., pick every nth point) for 24h view to keep it snappy.
+
+Power summary expansion & constraints
+
+Corner “Power Summary” should expand to a modal showing four lines on one chart: A1, A2, A3 (array input or output — pick one and be consistent) and Battery (positive = charge, negative = discharge).
+
+Show Input vs Load:
+
+Define:
+
+P_in_total = sum(array_in_watts) (or bus PV watts)
+
+P_load_total = sum(array_out_watts)
+
+P_batt = clamp(P_in_total - P_load_total, -P_batt_max_discharge, +P_batt_max_charge)
+
+Enforce load ≤ input + allowable battery discharge in allocator.
+
+In UI charts: display P_batt as positive (charging) / negative (discharging) area.
+
+Tooltip/legend that clarifies: “Battery = Input − Load”.
+
+Small implementation notes (to avoid regressions)
+
+Slider reset cause: periodic /api/snapshot is overwriting UI with stale duty.
+
+Solution: when user changes a slider, immediately set local state, send POST, and temporarily mute snapshot updates for that control (1–2s) or reconcile using an etag/version in state.
+
+Server must store master_duty per stage and return it in /api/status so UI rehydrates correctly after refresh.
+
+Cap & scale calculation should also be used in the power predictor and written to DB so history matches what the user saw.
+
+Acceptance criteria
+
+No hover bounce; UI stable.
+
+Master slider no longer snaps to 0; values persist across refresh.
+
+Dashboard fits 1920×1200, no scrollbars at default zoom.
+
+Clicking any history link opens a non-blank chart using live (simulated) data.
+
+Power Summary expands to a 3-arrays+Battery chart; Battery shows positive/negative correctly; “Input vs Load” respects constraints.

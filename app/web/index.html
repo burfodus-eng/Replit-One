@@ -22,18 +22,20 @@
     .container {
       max-width: 1920px;
       margin: 0 auto;
-      padding: 16px;
+      padding: 12px;
+      max-height: 1200px;
+      overflow: hidden;
     }
 
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px 24px;
+      padding: 16px 20px;
       background: rgba(255, 255, 255, 0.95);
-      border-radius: 20px;
+      border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
 
     .site-title {
@@ -65,29 +67,33 @@
 
     .main-layout {
       display: grid;
-      grid-template-columns: 1fr 400px;
-      gap: 20px;
+      grid-template-columns: 1fr 360px;
+      gap: 12px;
+      max-height: calc(1200px - 120px);
     }
 
     .arrays-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 12px;
+      max-height: 100%;
+      overflow-y: auto;
     }
 
     .card {
       background: rgba(255, 255, 255, 0.95);
       border-radius: 20px;
-      padding: 24px;
+      padding: 20px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       backdrop-filter: blur(10px);
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: box-shadow 0.2s;
+      border: 2px solid transparent;
     }
 
     .card:hover {
-      transform: translateY(-4px);
       box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+      border-color: rgba(102, 126, 234, 0.3);
     }
 
     .card-header {
@@ -400,6 +406,10 @@
       overflow-y: auto;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     }
+    
+    .modal-content.wide {
+      max-width: 80vw;
+    }
 
     .modal-header {
       display: flex;
@@ -513,7 +523,7 @@
       <div class="arrays-grid" id="arraysGrid"></div>
 
       <div class="sidebar">
-        <div class="sidebar-card">
+        <div class="sidebar-card" style="cursor: pointer;" onclick="showPowerSummary()">
           <div class="sidebar-title">System Load</div>
           <div class="load-stats" id="loadStats"></div>
           <div class="sparkline-container">
@@ -551,7 +561,7 @@
   </div>
 
   <div class="modal" id="historyModal">
-    <div class="modal-content">
+    <div class="modal-content wide">
       <div class="modal-header">
         <div class="modal-title" id="historyModalTitle">Array History</div>
         <button class="close-btn" onclick="closeHistoryModal()">✕</button>
@@ -561,11 +571,25 @@
       </div>
     </div>
   </div>
+  
+  <div class="modal" id="powerModal">
+    <div class="modal-content wide">
+      <div class="modal-header">
+        <div class="modal-title">Power Summary - Last Hour</div>
+        <button class="close-btn" onclick="closePowerModal()">✕</button>
+      </div>
+      <div class="chart-container">
+        <canvas id="powerChart"></canvas>
+      </div>
+    </div>
+  </div>
 
   <script>
     let arraysData = [];
     let currentSettingsArrayId = null;
     let updateInterval = null;
+    let sliderDebounce = new Map();
+    let localDutyState = new Map();
 
     function updateClock() {
       const now = new Date();
@@ -586,7 +610,9 @@
 
     function renderArrays() {
       const grid = document.getElementById('arraysGrid');
-      grid.innerHTML = arraysData.map(array => `
+      grid.innerHTML = arraysData.map(array => {
+        const duty = localDutyState.has(array.id) ? localDutyState.get(array.id) : Math.round(array.duty * 100);
+        return `
         <div class="card" onclick="showHistory('${array.id}')">
           <div class="card-header">
             <div>
@@ -599,14 +625,14 @@
           <div class="slider-container">
             <div class="slider-label">
               <span>Intensity</span>
-              <span id="duty-${array.id}">${Math.round(array.duty * 100)}%</span>
+              <span id="duty-${array.id}">${duty}%</span>
             </div>
             <input
               type="range"
               class="slider"
               min="0"
               max="100"
-              value="${Math.round(array.duty * 100)}"
+              value="${duty}"
               id="slider-${array.id}"
               onchange="updateDuty('${array.id}', this.value)"
               onclick="event.stopPropagation()"
@@ -651,27 +677,40 @@
             <canvas class="sparkline-canvas" id="sparkline-${array.id}"></canvas>
           </div>
         </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     async function updateDuty(arrayId, value) {
       const duty = value / 100.0;
+      localDutyState.set(arrayId, parseInt(value));
       document.getElementById(`duty-${arrayId}`).textContent = `${value}%`;
       
-      try {
-        await fetch('/api/control', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            stage_id: arrayId,
-            mode: 'MANUAL',
-            duty: duty
-          })
-        });
-        await loadArrays();
-      } catch (err) {
-        console.error('Failed to update duty:', err);
+      if (sliderDebounce.has(arrayId)) {
+        clearTimeout(sliderDebounce.get(arrayId));
       }
+      
+      sliderDebounce.set(arrayId, setTimeout(async () => {
+        try {
+          await fetch('/api/control', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              stage_id: arrayId,
+              mode: 'MANUAL',
+              duty: duty
+            })
+          });
+          
+          setTimeout(() => {
+            localDutyState.delete(arrayId);
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to update duty:', err);
+          localDutyState.delete(arrayId);
+        }
+        sliderDebounce.delete(arrayId);
+      }, 300));
     }
 
     async function loadSystemLoad() {
@@ -837,16 +876,236 @@
       }
     }
 
-    function showHistory(arrayId) {
+    async function showHistory(arrayId) {
       const array = arraysData.find(a => a.id === arrayId);
       if (!array) return;
       
-      document.getElementById('historyModalTitle').textContent = `${array.name} - History`;
+      document.getElementById('historyModalTitle').textContent = `${array.name} - History (1h)`;
       document.getElementById('historyModal').classList.add('active');
+      
+      try {
+        const res = await fetch(`/api/history/array/${arrayId}?range=1h`);
+        const data = await res.json();
+        renderHistoryChart(data.data);
+      } catch (err) {
+        console.error('Failed to load history:', err);
+      }
     }
 
     function closeHistoryModal() {
       document.getElementById('historyModal').classList.remove('active');
+    }
+    
+    async function showPowerSummary() {
+      document.getElementById('powerModal').classList.add('active');
+      
+      try {
+        const res = await fetch('/api/history/system?range=1h');
+        const data = await res.json();
+        renderPowerChart(data.data);
+      } catch (err) {
+        console.error('Failed to load power summary:', err);
+      }
+    }
+    
+    function closePowerModal() {
+      document.getElementById('powerModal').classList.remove('active');
+    }
+    
+    function renderPowerChart(data) {
+      const canvas = document.getElementById('powerChart');
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width = canvas.offsetWidth;
+      const height = canvas.height = 400;
+      
+      ctx.clearRect(0, 0, width, height);
+      
+      if (!data || data.length === 0) {
+        ctx.fillStyle = '#a0aec0';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No data available', width / 2, height / 2);
+        return;
+      }
+      
+      const arrays = ['A1', 'A2', 'A3'];
+      const colors = { 'A1': '#667eea', 'A2': '#ed8936', 'A3': '#48bb78', 'Battery': '#f6ad55' };
+      const maxP = Math.max(...data.map(d => {
+        const arrayMax = Math.max(...arrays.map(a => (d.arrays[a] && d.arrays[a].p) || 0));
+        const battMax = Math.abs(d.battery_w || 0);
+        return Math.max(arrayMax, battMax);
+      }), 1);
+      
+      const padding = 50;
+      const chartWidth = width - 2 * padding;
+      const chartHeight = height - 2 * padding;
+      
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = padding + (chartHeight / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(width - padding, y);
+        ctx.stroke();
+      }
+      
+      ctx.fillStyle = '#4a5568';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'right';
+      for (let i = 0; i <= 4; i++) {
+        const y = padding + (chartHeight / 4) * i;
+        const value = maxP * (1 - i / 4);
+        ctx.fillText(value.toFixed(0) + 'W', padding - 5, y + 4);
+      }
+      
+      arrays.forEach(arrayId => {
+        ctx.strokeStyle = colors[arrayId];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        let started = false;
+        if (data.length > 1) {
+          data.forEach((point, i) => {
+            if (point.arrays[arrayId]) {
+              const x = padding + (chartWidth / (data.length - 1)) * i;
+              const y = padding + chartHeight - (point.arrays[arrayId].p / maxP) * chartHeight;
+              if (!started) {
+                ctx.moveTo(x, y);
+                started = true;
+              } else {
+                ctx.lineTo(x, y);
+              }
+            }
+          });
+          ctx.stroke();
+        } else if (data.length === 1 && data[0].arrays[arrayId]) {
+          const x = padding + chartWidth / 2;
+          const y = padding + chartHeight - (data[0].arrays[arrayId].p / maxP) * chartHeight;
+          ctx.fillRect(x - 2, y - 2, 4, 4);
+        }
+      });
+      
+      ctx.strokeStyle = colors['Battery'];
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      if (data.length > 1) {
+        data.forEach((point, i) => {
+          const x = padding + (chartWidth / (data.length - 1)) * i;
+          const battValue = Math.abs(point.battery_w || 0);
+          const y = padding + chartHeight - (battValue / maxP) * chartHeight;
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.stroke();
+      } else if (data.length === 1) {
+        const x = padding + chartWidth / 2;
+        const battValue = Math.abs(data[0].battery_w || 0);
+        const y = padding + chartHeight - (battValue / maxP) * chartHeight;
+        ctx.fillRect(x - 2, y - 2, 4, 4);
+      }
+      ctx.setLineDash([]);
+      
+      ctx.font = '14px Arial';
+      ctx.textAlign = 'left';
+      [...arrays, 'Battery'].forEach((arrayId, idx) => {
+        const x = width - padding - 100;
+        const y = padding + idx * 25;
+        ctx.fillStyle = colors[arrayId];
+        ctx.fillRect(x, y - 8, 15, 15);
+        ctx.fillStyle = '#4a5568';
+        ctx.fillText(arrayId, x + 20, y + 4);
+      });
+      
+      ctx.fillStyle = '#4a5568';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      if (data.length > 1) {
+        const step = Math.max(1, Math.floor(data.length / 6));
+        for (let i = 0; i < data.length; i += step) {
+          if (data[i] && data[i].t) {
+            const x = padding + (chartWidth / (data.length - 1)) * i;
+            const time = new Date(data[i].t).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            ctx.fillText(time, x, height - 10);
+          }
+        }
+      }
+    }
+    
+    function renderHistoryChart(data) {
+      const canvas = document.getElementById('historyChart');
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width = canvas.offsetWidth;
+      const height = canvas.height = 400;
+      
+      ctx.clearRect(0, 0, width, height);
+      
+      if (!data || data.length === 0) {
+        ctx.fillStyle = '#a0aec0';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No data available', width / 2, height / 2);
+        return;
+      }
+      
+      const maxP = Math.max(...data.map(d => d.p), 1);
+      const padding = 40;
+      const chartWidth = width - 2 * padding;
+      const chartHeight = height - 2 * padding;
+      
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = padding + (chartHeight / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(width - padding, y);
+        ctx.stroke();
+      }
+      
+      ctx.fillStyle = '#4a5568';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'right';
+      for (let i = 0; i <= 4; i++) {
+        const y = padding + (chartHeight / 4) * i;
+        const value = maxP * (1 - i / 4);
+        ctx.fillText(value.toFixed(0) + 'W', padding - 5, y + 4);
+      }
+      
+      ctx.strokeStyle = '#667eea';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (data.length > 1) {
+        data.forEach((point, i) => {
+          const x = padding + (chartWidth / (data.length - 1)) * i;
+          const y = padding + chartHeight - (point.p / maxP) * chartHeight;
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.stroke();
+      } else if (data.length === 1) {
+        const x = padding + chartWidth / 2;
+        const y = padding + chartHeight - (data[0].p / maxP) * chartHeight;
+        ctx.fillRect(x - 2, y - 2, 4, 4);
+      }
+      
+      ctx.fillStyle = '#4a5568';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      if (data.length > 1) {
+        const step = Math.max(1, Math.floor(data.length / 6));
+        for (let i = 0; i < data.length; i += step) {
+          const x = padding + (chartWidth / (data.length - 1)) * i;
+          const time = new Date(data[i].t).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          ctx.fillText(time, x, height - 10);
+        }
+      }
     }
 
     async function refreshAll() {

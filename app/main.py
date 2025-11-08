@@ -9,7 +9,7 @@ from .services.automation import AutomationService
 from .services.system_health import SystemHealthService
 from .services.events import EventsService
 from .services.power_allocator import PowerAllocator
-from .routers import telemetry, control, config_api, automation, arrays
+from .routers import telemetry, control, config_api, automation, arrays, history
 
 
 app = FastAPI(title=CONFIG['site']['name'])
@@ -26,6 +26,7 @@ app.include_router(control.router, prefix='/api')
 app.include_router(config_api.router, prefix='/api')
 app.include_router(automation.router, prefix='/api')
 app.include_router(arrays.router, prefix='/api')
+app.include_router(history.router)
 
 
 @app.on_event('startup')
