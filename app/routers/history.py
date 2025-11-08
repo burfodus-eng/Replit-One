@@ -82,7 +82,12 @@ async def get_system_history(
                         }
                         total_load += row["power_w"]
                 
-                pv_power = request.app.state.latest.get("pv_power", 0) if hasattr(request.app.state, "latest") else 0
+                pv_power = 0.0
+                if hasattr(request.app.state, "latest") and request.app.state.latest:
+                    for reading in request.app.state.latest:
+                        if reading.stage_id == "PV":
+                            pv_power = reading.vout_v * reading.iout_a
+                            break
                 entry["battery_w"] = round(pv_power - total_load, 1)
                 
                 if entry["t"]:
