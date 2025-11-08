@@ -5,3 +5,10 @@ pyyaml
 sqlmodel
 apscheduler
 websockets
+apscheduler
+fastapi
+python-dotenv
+pyyaml
+sqlmodel
+uvicorn[standard]
+websockets
