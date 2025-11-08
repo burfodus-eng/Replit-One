@@ -1,0 +1,65 @@
+<!doctype html>
+const res = await fetch('/api/status');
+const data = await res.json();
+const wrap = document.getElementById('cards');
+wrap.innerHTML = '';
+data.forEach(s => {
+STAGES.push(s.stage_id);
+const el = document.createElement('div');
+el.className = 'card';
+el.innerHTML = `
+<h3>${s.stage_id}</h3>
+<div class="row">
+<span><b>Enabled:</b> ${s.enabled}</span>
+<span><b>Mode:</b> ${s.mode}</span>
+<span><b>Duty:</b> ${(s.duty*100).toFixed(0)}%</span>
+<span></span>
+</div>
+<div class="row" style="margin-top:.5rem">
+<label>Mode <select id="mode-${s.stage_id}">
+<option>OFF</option><option>MANUAL</option><option>AUTO</option><option>REDUNDANT</option>
+</select></label>
+<label>Duty <input id="duty-${s.stage_id}" type="number" min="0" max="1" step="0.05" value="${s.duty}"></label>
+<label>Enable <input id="en-${s.stage_id}" type="checkbox" ${s.enabled? 'checked':''}></label>
+<button onclick="apply('${s.stage_id}')">Apply</button>
+</div>
+<div class="row" id="tele-${s.stage_id}" style="margin-top:.5rem"></div>
+`;
+wrap.appendChild(el);
+});
+}
+
+
+async function refresh(){
+const res = await fetch('/api/snapshot');
+const data = await res.json();
+data.forEach(r => {
+const t = document.getElementById('tele-'+r.stage_id);
+if(!t) return;
+t.innerHTML = `
+<span><b>Vin</b> ${r.vin_v.toFixed(2)} V</span>
+<span><b>Iin</b> ${r.iin_a.toFixed(2)} A</span>
+<span><b>Vout</b> ${r.vout_v.toFixed(2)} V</span>
+<span><b>Iout</b> ${r.iout_a.toFixed(2)} A</span>
+`;
+});
+}
+
+
+async function apply(stage){
+const body = {
+stage_id: stage,
+mode: document.getElementById('mode-'+stage).value,
+duty: parseFloat(document.getElementById('duty-'+stage).value || '0'),
+enable: document.getElementById('en-'+stage).checked
+};
+await fetch('/api/control', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+await loadStatus();
+}
+
+
+loadStatus();
+setInterval(refresh, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pyyaml
+sqlmodel
+apscheduler
+websockets
