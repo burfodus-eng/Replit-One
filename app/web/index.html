@@ -5,87 +5,672 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reef Controller</title>
 <style>
-body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 1rem; background: #1a1a1a; color: #e0e0e0; }
-h1 { color: #4a9eff; }
-#cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
-.card { background: #2a2a2a; border: 1px solid #404040; border-radius: 8px; padding: 1rem; }
-.card h3 { margin-top: 0; color: #4a9eff; }
-.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; }
-label { display: flex; flex-direction: column; font-size: 0.9rem; }
-input, select { margin-top: 0.25rem; padding: 0.25rem; background: #1a1a1a; color: #e0e0e0; border: 1px solid #404040; border-radius: 4px; }
-button { padding: 0.5rem 1rem; background: #4a9eff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-button:hover { background: #3a8eef; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #0a1929 0%, #1a2332 100%);
+  color: #e0e7ff;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.container { max-width: 1400px; margin: 0 auto; }
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2a4a6f 100%);
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  color: #60a5fa;
+  font-size: 2rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.time-display {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #93c5fd;
+}
+
+/* Grid Layout */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Cards */
+.card {
+  background: linear-gradient(135deg, #1e293b 0%, #2a3548 100%);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #374151;
+}
+
+.card-header h3 {
+  color: #60a5fa;
+  font-size: 1.25rem;
+}
+
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge.on { background: #10b981; color: white; }
+.badge.off { background: #6b7280; color: white; }
+.badge.auto { background: #3b82f6; color: white; }
+
+/* LED Controls */
+.led-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.intensity-value {
+  background: rgba(59, 130, 246, 0.2);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  color: #60a5fa;
+  font-weight: 600;
+  min-width: 60px;
+  text-align: center;
+}
+
+.slider {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #374151;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+}
+
+/* Telemetry */
+.telemetry {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #374151;
+}
+
+.telemetry-item {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.75rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.telemetry-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.telemetry-value {
+  font-size: 1.25rem;
+  color: #e0e7ff;
+  font-weight: 600;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+select, button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e0e7ff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+select:hover, button:hover {
+  background: #2a3548;
+  border-color: #60a5fa;
+}
+
+button.primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  font-weight: 600;
+}
+
+button.primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+/* Wave Mode */
+.wave-mode-selector {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.wave-mode-selector select {
+  flex: 1;
+}
+
+/* Tasks */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.task-item {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid transparent;
+}
+
+.task-item.completed { border-left-color: #10b981; }
+.task-item.upcoming { border-left-color: #f59e0b; }
+
+.task-name {
+  font-weight: 600;
+  color: #e0e7ff;
+  margin-bottom: 0.25rem;
+}
+
+.task-time {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.task-eta {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  background: rgba(245, 158, 11, 0.2);
+  border-radius: 4px;
+  color: #fbbf24;
+  font-size: 0.75rem;
+}
+
+/* System Health */
+.health-card {
+  border-left: 4px solid;
+}
+
+.health-card.ok { border-left-color: #10b981; }
+.health-card.warning { border-left-color: #f59e0b; }
+.health-card.error { border-left-color: #ef4444; }
+
+.health-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.status-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.health-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.health-message {
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.health-message.error {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.health-message.warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.health-message.info {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr; }
+  .header { flex-direction: column; gap: 1rem; text-align: center; }
+}
 </style>
 </head>
 <body>
-<h1>Reef Controller</h1>
-<div id="cards"></div>
+
+<div class="container">
+  <div class="header">
+    <h1>🌊 Reef Controller</h1>
+    <div class="time-display" id="currentTime">Loading...</div>
+  </div>
+
+  <!-- LED Array Cards -->
+  <div class="grid" id="ledCards"></div>
+
+  <!-- Bottom Section -->
+  <div class="grid">
+    <!-- Battery Card -->
+    <div class="card" id="batteryCard"></div>
+
+    <!-- Wave Mode Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3>💨 Wave Mode</h3>
+      </div>
+      <div class="wave-mode-selector">
+        <select id="waveModeSelect"></select>
+        <button class="primary" onclick="applyWaveMode()">Apply</button>
+      </div>
+    </div>
+
+    <!-- System Health Card -->
+    <div class="card health-card" id="healthCard">
+      <div class="card-header">
+        <h3>🏥 System Health</h3>
+        <div class="health-status" id="healthStatus"></div>
+      </div>
+      <div class="health-messages" id="healthMessages"></div>
+    </div>
+  </div>
+
+  <!-- Tasks Section -->
+  <div class="grid">
+    <!-- Completed Tasks -->
+    <div class="card">
+      <div class="card-header">
+        <h3>✅ Completed Tasks</h3>
+      </div>
+      <div class="task-list" id="completedTasks"></div>
+    </div>
+
+    <!-- Upcoming Tasks -->
+    <div class="card">
+      <div class="card-header">
+        <h3>⏰ Upcoming Tasks</h3>
+      </div>
+      <div class="task-list" id="upcomingTasks"></div>
+    </div>
+  </div>
+</div>
 
 <script>
-let STAGES = [];
+let stages = [];
 
-async function loadStatus(){
-const res = await fetch('/api/status');
-const data = await res.json();
-const wrap = document.getElementById('cards');
-wrap.innerHTML = '';
-data.forEach(s => {
-STAGES.push(s.stage_id);
-const el = document.createElement('div');
-el.className = 'card';
-el.innerHTML = `
-<h3>${s.stage_id}</h3>
-<div class="row">
-<span><b>Enabled:</b> ${s.enabled}</span>
-<span><b>Mode:</b> ${s.mode}</span>
-<span><b>Duty:</b> ${(s.duty*100).toFixed(0)}%</span>
-<span></span>
-</div>
-<div class="row" style="margin-top:.5rem">
-<label>Mode <select id="mode-${s.stage_id}">
-<option>OFF</option><option>MANUAL</option><option>AUTO</option><option>REDUNDANT</option>
-</select></label>
-<label>Duty <input id="duty-${s.stage_id}" type="number" min="0" max="1" step="0.05" value="${s.duty}"></label>
-<label>Enable <input id="en-${s.stage_id}" type="checkbox" ${s.enabled? 'checked':''}></label>
-<button onclick="apply('${s.stage_id}')">Apply</button>
-</div>
-<div class="row" id="tele-${s.stage_id}" style="margin-top:.5rem"></div>
-`;
-wrap.appendChild(el);
-});
+// Update time display
+function updateTime() {
+  const now = new Date();
+  const options = { 
+    weekday: 'short', 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric', 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    second: '2-digit' 
+  };
+  document.getElementById('currentTime').textContent = now.toLocaleString('en-US', options);
 }
 
-
-async function refresh(){
-const res = await fetch('/api/snapshot');
-const data = await res.json();
-data.forEach(r => {
-const t = document.getElementById('tele-'+r.stage_id);
-if(!t) return;
-t.innerHTML = `
-<span><b>Vin</b> ${r.vin_v.toFixed(2)} V</span>
-<span><b>Iin</b> ${r.iin_a.toFixed(2)} A</span>
-<span><b>Vout</b> ${r.vout_v.toFixed(2)} V</span>
-<span><b>Iout</b> ${r.iout_a.toFixed(2)} A</span>
-`;
-});
+// Load stage status
+async function loadStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    stages = data;
+    
+    const ledCardsContainer = document.getElementById('ledCards');
+    ledCardsContainer.innerHTML = '';
+    
+    data.forEach(s => {
+      if (s.stage_id.includes('Array')) {
+        const card = createLEDCard(s);
+        ledCardsContainer.appendChild(card);
+      } else if (s.stage_id === 'Battery') {
+        updateBatteryCard(s);
+      }
+    });
+  } catch (err) {
+    console.error('Failed to load status:', err);
+  }
 }
 
-
-async function apply(stage){
-const body = {
-stage_id: stage,
-mode: document.getElementById('mode-'+stage).value,
-duty: parseFloat(document.getElementById('duty-'+stage).value || '0'),
-enable: document.getElementById('en-'+stage).checked
-};
-await fetch('/api/control', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
-await loadStatus();
+// Create LED card
+function createLEDCard(stage) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = `card-${stage.stage_id}`;
+  
+  const intensityPercent = Math.round(stage.duty * 100);
+  const statusBadge = stage.enabled ? 
+    `<span class="badge ${stage.mode.toLowerCase()}">${stage.mode}</span>` : 
+    `<span class="badge off">OFF</span>`;
+  
+  card.innerHTML = `
+    <div class="card-header">
+      <h3>💡 ${stage.stage_id}</h3>
+      ${statusBadge}
+    </div>
+    
+    <div class="led-controls">
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Light Intensity</span>
+          <span class="intensity-value" id="intensity-${stage.stage_id}">${intensityPercent}%</span>
+        </div>
+        <input 
+          type="range" 
+          class="slider" 
+          id="slider-${stage.stage_id}" 
+          min="0" 
+          max="100" 
+          value="${intensityPercent}"
+          oninput="updateIntensity('${stage.stage_id}', this.value)"
+          onchange="applyIntensity('${stage.stage_id}', this.value)"
+        >
+      </div>
+      
+      <div class="controls">
+        <select id="mode-${stage.stage_id}">
+          <option ${stage.mode === 'OFF' ? 'selected' : ''}>OFF</option>
+          <option ${stage.mode === 'MANUAL' ? 'selected' : ''}>MANUAL</option>
+          <option ${stage.mode === 'AUTO' ? 'selected' : ''}>AUTO</option>
+          <option ${stage.mode === 'REDUNDANT' ? 'selected' : ''}>REDUNDANT</option>
+        </select>
+        <label style="display: flex; align-items: center; gap: 0.5rem; color: #cbd5e1;">
+          <input type="checkbox" id="en-${stage.stage_id}" ${stage.enabled ? 'checked' : ''}>
+          Enable
+        </label>
+        <button class="primary" onclick="applyControls('${stage.stage_id}')">Apply</button>
+      </div>
+    </div>
+    
+    <div class="telemetry" id="tele-${stage.stage_id}"></div>
+  `;
+  
+  return card;
 }
 
+// Update battery card
+function updateBatteryCard(stage) {
+  const batteryCard = document.getElementById('batteryCard');
+  const statusBadge = stage.enabled ? 
+    `<span class="badge ${stage.mode.toLowerCase()}">${stage.mode}</span>` : 
+    `<span class="badge off">OFF</span>`;
+    
+  batteryCard.innerHTML = `
+    <div class="card-header">
+      <h3>🔋 Battery</h3>
+      ${statusBadge}
+    </div>
+    <div class="telemetry" id="tele-Battery"></div>
+  `;
+}
 
-loadStatus();
-setInterval(refresh, 1000);
+// Update intensity display
+function updateIntensity(stageId, value) {
+  document.getElementById(`intensity-${stageId}`).textContent = `${value}%`;
+}
+
+// Apply intensity change
+async function applyIntensity(stageId, value) {
+  const duty = value / 100;
+  await fetch('/api/control', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      stage_id: stageId,
+      mode: document.getElementById(`mode-${stageId}`).value,
+      duty: duty,
+      enable: document.getElementById(`en-${stageId}`).checked
+    })
+  });
+  await loadStatus();
+}
+
+// Apply controls
+async function applyControls(stageId) {
+  const slider = document.getElementById(`slider-${stageId}`);
+  const duty = slider.value / 100;
+  
+  await fetch('/api/control', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      stage_id: stageId,
+      mode: document.getElementById(`mode-${stageId}`).value,
+      duty: duty,
+      enable: document.getElementById(`en-${stageId}`).checked
+    })
+  });
+  await loadStatus();
+}
+
+// Refresh telemetry
+async function refreshTelemetry() {
+  try {
+    const res = await fetch('/api/snapshot');
+    const data = await res.json();
+    
+    data.forEach(r => {
+      const tele = document.getElementById(`tele-${r.stage_id}`);
+      if (!tele) return;
+      
+      tele.innerHTML = `
+        <div class="telemetry-item">
+          <span class="telemetry-label">Input Voltage</span>
+          <span class="telemetry-value">${r.vin_v.toFixed(2)} V</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Input Current</span>
+          <span class="telemetry-value">${r.iin_a.toFixed(2)} A</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Output Voltage</span>
+          <span class="telemetry-value">${r.vout_v.toFixed(2)} V</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">Output Current</span>
+          <span class="telemetry-value">${r.iout_a.toFixed(2)} A</span>
+        </div>
+      `;
+    });
+  } catch (err) {
+    console.error('Failed to refresh telemetry:', err);
+  }
+}
+
+// Load wave modes
+async function loadWaveModes() {
+  try {
+    const res = await fetch('/api/automation/wave-modes');
+    const data = await res.json();
+    
+    const select = document.getElementById('waveModeSelect');
+    select.innerHTML = data.modes.map(mode => 
+      `<option ${mode === data.current ? 'selected' : ''}>${mode}</option>`
+    ).join('');
+  } catch (err) {
+    console.error('Failed to load wave modes:', err);
+  }
+}
+
+// Apply wave mode
+async function applyWaveMode() {
+  const mode = document.getElementById('waveModeSelect').value;
+  await fetch('/api/automation/wave-mode', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode })
+  });
+}
+
+// Load tasks
+async function loadTasks() {
+  try {
+    const [completed, upcoming] = await Promise.all([
+      fetch('/api/automation/tasks/completed').then(r => r.json()),
+      fetch('/api/automation/tasks/upcoming').then(r => r.json())
+    ]);
+    
+    document.getElementById('completedTasks').innerHTML = completed.map(task => `
+      <div class="task-item completed">
+        <div class="task-name">${task.name}</div>
+        <div class="task-time">${task.time}</div>
+      </div>
+    `).join('');
+    
+    document.getElementById('upcomingTasks').innerHTML = upcoming.map(task => `
+      <div class="task-item upcoming">
+        <div class="task-name">${task.name}</div>
+        <div class="task-time">
+          ${task.time}
+          <span class="task-eta">in ${task.eta_minutes} min</span>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load tasks:', err);
+  }
+}
+
+// Load system health
+async function loadSystemHealth() {
+  try {
+    const res = await fetch('/api/system/health');
+    const health = await res.json();
+    
+    const card = document.getElementById('healthCard');
+    card.className = `card health-card ${health.status}`;
+    
+    const statusHtml = `
+      <span class="status-indicator" style="background: ${health.color}"></span>
+      <span style="text-transform: uppercase; font-weight: 600;">${health.status}</span>
+    `;
+    document.getElementById('healthStatus').innerHTML = statusHtml;
+    
+    const messages = [
+      ...health.errors.map(msg => `<div class="health-message error">❌ ${msg}</div>`),
+      ...health.warnings.map(msg => `<div class="health-message warning">⚠️ ${msg}</div>`),
+      ...health.info.map(msg => `<div class="health-message info">✅ ${msg}</div>`)
+    ];
+    
+    document.getElementById('healthMessages').innerHTML = messages.join('');
+  } catch (err) {
+    console.error('Failed to load system health:', err);
+  }
+}
+
+// Initialize
+async function init() {
+  updateTime();
+  setInterval(updateTime, 1000);
+  
+  await loadStatus();
+  await loadWaveModes();
+  await loadTasks();
+  await loadSystemHealth();
+  
+  setInterval(refreshTelemetry, 1000);
+  setInterval(loadSystemHealth, 5000);
+}
+
+init();
 </script>
+
 </body>
 </html>
