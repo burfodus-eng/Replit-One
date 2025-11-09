@@ -642,6 +642,7 @@
     let updateInterval = null;
     let sliderDebounce = new Map();
     let localDutyState = new Map();
+    let localToggleState = new Map();
 
     function updateClock() {
       const now = new Date();
@@ -664,6 +665,7 @@
       const grid = document.getElementById('arraysGrid');
       grid.innerHTML = arraysData.map(array => {
         const duty = localDutyState.has(array.id) ? localDutyState.get(array.id) : Math.round(array.duty * 100);
+        const enabled = localToggleState.has(array.id) ? localToggleState.get(array.id) : array.enabled;
         return `
         <div class="card" onclick="showHistory('${array.id}')">
           <div class="card-header">
@@ -673,7 +675,7 @@
             </div>
             <div style="display: flex; gap: 12px; align-items: center;">
               <label class="toggle-switch" onclick="event.stopPropagation();">
-                <input type="checkbox" ${array.enabled ? 'checked' : ''} onchange="toggleArray('${array.id}', this.checked)">
+                <input type="checkbox" ${enabled ? 'checked' : ''} onchange="toggleArray('${array.id}', this.checked)">
                 <span class="toggle-slider"></span>
               </label>
               <button class="settings-btn" onclick="event.stopPropagation(); showSettings('${array.id}')">⚙</button>
@@ -766,7 +768,7 @@
           
           setTimeout(() => {
             localDutyState.delete(arrayId);
-          }, 2000);
+          }, 5000);
         } catch (err) {
           console.error('Failed to update duty:', err);
           localDutyState.delete(arrayId);
@@ -776,6 +778,8 @@
     }
     
     async function toggleArray(arrayId, enabled) {
+      localToggleState.set(arrayId, enabled);
+      
       try {
         await fetch('/api/control', {
           method: 'POST',
@@ -785,9 +789,13 @@
             enable: enabled
           })
         });
-        await loadArrays();
+        
+        setTimeout(() => {
+          localToggleState.delete(arrayId);
+        }, 5000);
       } catch (err) {
         console.error('Failed to toggle array:', err);
+        localToggleState.delete(arrayId);
       }
     }
 
