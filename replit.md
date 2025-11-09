@@ -35,12 +35,23 @@ Reef Controller is a FastAPI-based application designed to monitor and control r
 - **Array toggle local state**: Added localToggleState tracking so array enable/disable doesn't reset during refreshes
 - **Consistent UX**: Both slider and toggle maintain user input through background polling without flickering
 
+#### Deployment Configuration
+- **Autoscale deployment ready**: Configured for Replit publishing with automatic dependency installation
+- **Build command**: `pip install -r requirements.txt` installs all dependencies before deployment
+- **Run command**: `uvicorn app.main:app --host 0.0.0.0 --port 5000` for production-ready server
+- **Database auto-creation**: Startup event automatically creates database directory if missing
+- **Enhanced startup logging**: Detailed initialization logs for each service (via uvicorn.error logger)
+- **Error handling**: Try/except wrapper around startup with specific component failure reporting
+- **Clean dependencies**: Removed duplicate entries from requirements.txt
+
 #### Technical Updates
 - Added `is_on` field to LEDSettingsUpdate model
 - Updated /arrays/{id}/settings endpoint to handle LED enable/disable state
 - Added toggle switch CSS components
 - LED settings modal expanded to 4-column grid (ID, Label, Limit%, Toggle)
 - Implemented local state persistence with 5-second timeout for slider and toggle controls
+- Database directory creation with Path.mkdir(parents=True, exist_ok=True)
+- Startup logging via uvicorn.error logger for deployment diagnostics
 
 **Known Limitation**: LED is_on state does not persist across server restarts (stored in memory only). Settings must be reapplied after restart. Future enhancement will add config file or database persistence.
 
