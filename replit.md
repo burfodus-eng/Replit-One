@@ -30,11 +30,17 @@ Reef Controller is a FastAPI-based application designed to monitor and control r
 - **Compact layout**: Tightened spacing throughout to fit 1920×1200 without scrolling
 - **6-item telemetry grid**: 2×3 layout showing Input V/I, Output V/I, Power, and Mode
 
+#### Control Persistence Improvements
+- **Extended slider local state**: Intensity slider now holds value for 5 seconds (up from 2s) to survive multiple page refresh cycles
+- **Array toggle local state**: Added localToggleState tracking so array enable/disable doesn't reset during refreshes
+- **Consistent UX**: Both slider and toggle maintain user input through background polling without flickering
+
 #### Technical Updates
 - Added `is_on` field to LEDSettingsUpdate model
 - Updated /arrays/{id}/settings endpoint to handle LED enable/disable state
 - Added toggle switch CSS components
 - LED settings modal expanded to 4-column grid (ID, Label, Limit%, Toggle)
+- Implemented local state persistence with 5-second timeout for slider and toggle controls
 
 **Known Limitation**: LED is_on state does not persist across server restarts (stored in memory only). Settings must be reapplied after restart. Future enhancement will add config file or database persistence.
 
