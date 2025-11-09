@@ -6,9 +6,39 @@ A sophisticated web-based reef aquarium controller with real-time monitoring and
 
 Reef Controller is a FastAPI-based application designed to monitor and control reef aquarium equipment including LED lighting arrays, battery backup systems, and wave pumps. The application features a beautiful web interface with real-time telemetry updates and interactive controls.
 
-## Recent Changes (November 8, 2025)
+## Recent Changes
 
-### Major Upgrade: Professional Touch-Enabled Interface with Intelligent Power Management
+### November 9, 2025: LED Control Enhancements
+
+#### Individual LED Enable/Disable Controls
+- **Per-LED toggles in settings modal**: Each LED can now be individually enabled or disabled
+- **Visual feedback**: Disabled LEDs show as off (gray) on array cards
+- **Settings persist during session**: LED enable/disable state maintained until server restart
+
+#### Array-Level Enable/Disable
+- **Quick array control**: Toggle switch added to array card header for fast enable/disable
+- **Master control**: Entire array can be turned on/off without adjusting individual LEDs
+
+#### Corrected LED Display
+- **Fixed percentage display**: Array cards now show configured intensity limits (intensity_limit_pct) instead of current scaled values
+- **Master slider behavior**: Duty slider correctly scales all enabled LEDs proportionally based on their individual limits
+- **Clear settings**: LED percentages in settings modal match what's displayed on cards
+
+#### Wide Chart Modals (16:10 Display Optimization)
+- **90% viewport width**: History and power charts now use 90vw for maximum data visibility
+- **Canvas expansion**: Chart canvases fill the modal width (1664px on 1920×1200 displays)
+- **Compact layout**: Tightened spacing throughout to fit 1920×1200 without scrolling
+- **6-item telemetry grid**: 2×3 layout showing Input V/I, Output V/I, Power, and Mode
+
+#### Technical Updates
+- Added `is_on` field to LEDSettingsUpdate model
+- Updated /arrays/{id}/settings endpoint to handle LED enable/disable state
+- Added toggle switch CSS components
+- LED settings modal expanded to 4-column grid (ID, Label, Limit%, Toggle)
+
+**Known Limitation**: LED is_on state does not persist across server restarts (stored in memory only). Settings must be reapplied after restart. Future enhancement will add config file or database persistence.
+
+### November 8, 2025: Professional Touch-Enabled Interface with Intelligent Power Management
 
 #### Per-LED Granular Control
 - **3 Renamed Arrays**: Acropora SPS Lights (A1), LPS Lights (A2), Center Lights (A3)
