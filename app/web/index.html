@@ -448,12 +448,57 @@
 
     .led-setting-item {
       display: grid;
-      grid-template-columns: 100px 1fr 100px;
+      grid-template-columns: 80px 1fr 100px 80px;
       gap: 16px;
       padding: 16px;
       background: #f7fafc;
       border-radius: 12px;
       align-items: center;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #cbd5e0;
+      transition: .3s;
+      border-radius: 34px;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+      background-color: #667eea;
+    }
+    
+    input:checked + .toggle-slider:before {
+      transform: translateX(26px);
     }
 
     .input-field {
@@ -626,7 +671,13 @@
               <div class="array-title">${array.name}</div>
               <div class="array-description">${array.description}</div>
             </div>
-            <button class="settings-btn" onclick="event.stopPropagation(); showSettings('${array.id}')">⚙</button>
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <label class="toggle-switch" onclick="event.stopPropagation();">
+                <input type="checkbox" ${array.enabled ? 'checked' : ''} onchange="toggleArray('${array.id}', this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
+              <button class="settings-btn" onclick="event.stopPropagation(); showSettings('${array.id}')">⚙</button>
+            </div>
           </div>
 
           <div class="slider-container">
@@ -651,7 +702,7 @@
               <div class="led-indicator">
                 <div class="led-status ${led.is_on ? 'led-on' : 'led-off'}"></div>
                 <div class="led-label">${led.label}</div>
-                <div class="led-intensity">${Math.round(led.current_intensity_pct)}%</div>
+                <div class="led-intensity">${led.intensity_limit_pct}%</div>
                 <div class="led-priority">P${led.priority}</div>
               </div>
             `).join('')}
@@ -722,6 +773,22 @@
         }
         sliderDebounce.delete(arrayId);
       }, 300));
+    }
+    
+    async function toggleArray(arrayId, enabled) {
+      try {
+        await fetch('/api/control', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            stage_id: arrayId,
+            enable: enabled
+          })
+        });
+        await loadArrays();
+      } catch (err) {
+        console.error('Failed to toggle array:', err);
+      }
     }
 
     async function loadSystemLoad() {
@@ -848,6 +915,10 @@
             max="100"
             placeholder="%"
           >
+          <label class="toggle-switch">
+            <input type="checkbox" id="enabled-${led.id}" ${led.is_on ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+          </label>
         </div>
       `).join('');
       
@@ -869,7 +940,8 @@
       array.leds.forEach(led => {
         updates[led.id] = {
           label: document.getElementById(`label-${led.id}`).value,
-          intensity_limit_pct: parseInt(document.getElementById(`limit-${led.id}`).value)
+          intensity_limit_pct: parseInt(document.getElementById(`limit-${led.id}`).value),
+          is_on: document.getElementById(`enabled-${led.id}`).checked
         };
       });
       

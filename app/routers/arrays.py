@@ -76,6 +76,10 @@ async def update_array_settings(
             led.intensity_limit_pct = max(0, min(100, updates.intensity_limit_pct))
         if updates.priority is not None:
             led.priority = updates.priority
+        if updates.is_on is not None:
+            led.is_on = updates.is_on
+    
+    stage.apply_control()
     
     return {"success": True, "array_id": array_id}
 

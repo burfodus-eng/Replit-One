@@ -67,6 +67,7 @@ class LEDSettingsUpdate(BaseModel):
     label: Optional[str] = None
     intensity_limit_pct: Optional[int] = None
     priority: Optional[int] = None
+    is_on: Optional[bool] = None
 
 
 class ArraySettingsRequest(BaseModel):
