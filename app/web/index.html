@@ -1007,7 +1007,10 @@
             
             <div class="curve-editor-grid">
               <div class="curve-editor-panel">
-                <div class="curve-editor-header">Wavemaker 1</div>
+                <div class="curve-editor-header">
+                  Wavemaker 1
+                  <button onclick="clearCurve('wavemaker_1')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
                 <div class="curve-canvas-container">
                   <canvas class="curve-canvas" id="curveCanvas1" width="400" height="200"></canvas>
                 </div>
@@ -1015,7 +1018,10 @@
               </div>
               
               <div class="curve-editor-panel">
-                <div class="curve-editor-header">Wavemaker 2</div>
+                <div class="curve-editor-header">
+                  Wavemaker 2
+                  <button onclick="clearCurve('wavemaker_2')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
                 <div class="curve-canvas-container">
                   <canvas class="curve-canvas" id="curveCanvas2" width="400" height="200"></canvas>
                 </div>
@@ -1023,7 +1029,10 @@
               </div>
               
               <div class="curve-editor-panel">
-                <div class="curve-editor-header">Wavemaker 3</div>
+                <div class="curve-editor-header">
+                  Wavemaker 3
+                  <button onclick="clearCurve('wavemaker_3')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
                 <div class="curve-canvas-container">
                   <canvas class="curve-canvas" id="curveCanvas3" width="400" height="200"></canvas>
                 </div>
@@ -1031,7 +1040,10 @@
               </div>
               
               <div class="curve-editor-panel">
-                <div class="curve-editor-header">Wavemaker 4</div>
+                <div class="curve-editor-header">
+                  Wavemaker 4
+                  <button onclick="clearCurve('wavemaker_4')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
                 <div class="curve-canvas-container">
                   <canvas class="curve-canvas" id="curveCanvas4" width="400" height="200"></canvas>
                 </div>
@@ -1039,7 +1051,10 @@
               </div>
               
               <div class="curve-editor-panel">
-                <div class="curve-editor-header">Wavemaker 5</div>
+                <div class="curve-editor-header">
+                  Wavemaker 5
+                  <button onclick="clearCurve('wavemaker_5')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
                 <div class="curve-canvas-container">
                   <canvas class="curve-canvas" id="curveCanvas5" width="400" height="200"></canvas>
                 </div>
@@ -1047,7 +1062,10 @@
               </div>
               
               <div class="curve-editor-panel">
-                <div class="curve-editor-header">Wavemaker 6</div>
+                <div class="curve-editor-header">
+                  Wavemaker 6
+                  <button onclick="clearCurve('wavemaker_6')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
                 <div class="curve-canvas-container">
                   <canvas class="curve-canvas" id="curveCanvas6" width="400" height="200"></canvas>
                 </div>
@@ -1371,7 +1389,7 @@
           <div class="card-header">
             <div>
               <div class="array-title">${wm.name}</div>
-              <div class="array-description">Channel ${wm.id}</div>
+              <div class="array-description">Channel ${wm.id + 1}</div>
             </div>
           </div>
 
@@ -1936,6 +1954,15 @@
       }
       
       return curve[curve.length - 1].power;
+    }
+
+    function clearCurve(wavemakerKey) {
+      if (!presetCurveData[wavemakerKey]) {
+        presetCurveData[wavemakerKey] = [];
+      } else {
+        presetCurveData[wavemakerKey] = [];
+      }
+      drawAllCurves();
     }
 
     function showSettings(arrayId) {
