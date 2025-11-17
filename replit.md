@@ -1,8 +1,9 @@
 # Reef Controller
 
-**Current Version: v1.2.0**
+**Current Version: v1.2.1**
 
 ## Version History
+- **v1.2.1** (Nov 17, 2025): UI polish - fixed Canvas keyframe editor coordinate mapping for accurate mouse interaction, removed individual wavemaker controls and added visual flow pattern displays, fixed preset selector jumping on refresh
 - **v1.2.0** (Nov 17, 2025): Added graphical preset editor with Canvas-based curve design, interactive keyframe editing, and automated scheduler for time-based preset switching
 - **v1.1.0** (Nov 17, 2025): Added preset-based wavemaker control system with 6 built-in flow patterns, interpolated power curves, REST API, and frontend preset selector
 - **v1.0.0**: Initial release with LED control, battery management, individual wavemaker control, and power allocation
@@ -33,8 +34,10 @@ The Reef Controller is built upon a FastAPI backend and a vanilla JavaScript fro
     - **Intelligent Power Management**: Priority-based power shedding with hysteresis, running every second to respond to power budget changes.
 - **Frontend (Vanilla JavaScript)**:
     - No external frameworks are used.
-    - Utilizes HTML5 Canvas for sparkline rendering.
+    - Utilizes HTML5 Canvas for sparkline rendering and visual flow pattern displays.
+    - Canvas coordinate mapping uses `getBoundingClientRect()` for accurate mouse interaction in scaled layouts.
     - Implements local state persistence for sliders and toggles (e.g., 5-second timeout for intensity sliders) to maintain user input during UI refreshes.
+    - Smart preset selector updates only when state actually changes to prevent visual jumping.
 
 ### Feature Specifications
 - **Wavemaker Preset System**: Coordinated flow pattern control across all 6 wavemakers using preset-based management. Features 6 built-in presets (Gentle Flow, Pulse, Gyre Clockwise/Counter-Clockwise, Feed Mode, Random Reef) with custom flow curves per wavemaker. PresetManager interpolates power values from keyframe-based curves every 20Hz for smooth transitions. REST API supports preset CRUD operations, activation, and real-time status. Frontend includes preset selector dropdown, graphical curve editor with Canvas-based interactive keyframe editing (click to add, drag to move, Shift+click to delete), and automated scheduler for time-based preset switching.
