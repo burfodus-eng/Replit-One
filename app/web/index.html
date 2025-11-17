@@ -14,7 +14,7 @@
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-      min-height: 100vh;
+      background-attachment: fixed;
       color: #2d3748;
       overflow-x: hidden;
     }
@@ -23,6 +23,7 @@
       max-width: 1920px;
       margin: 0 auto;
       padding: 12px;
+      padding-bottom: 40px;
     }
 
     header {
@@ -555,9 +556,24 @@
         grid-template-columns: 1fr 350px;
       }
     }
+    
+    @media (max-width: 1200px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+      
+      .arrays-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .sidebar {
+        order: 2;
+      }
+    }
 
     .wavemakers-section {
       margin-top: 20px;
+      margin-bottom: 20px;
     }
 
     .section-header {
@@ -610,16 +626,6 @@
 
     .mode-selector:hover {
       border-color: #667eea;
-    }
-
-    @media (max-width: 1200px) {
-      .main-layout {
-        grid-template-columns: 1fr;
-      }
-
-      .arrays-grid {
-        grid-template-columns: 1fr;
-      }
     }
   </style>
 </head>
