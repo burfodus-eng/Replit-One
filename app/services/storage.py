@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field, create_engine, Session, select
+from sqlmodel import SQLModel, Field, create_engine, Session, select, Column, JSON
 from datetime import datetime
 from typing import Optional, List
 
@@ -13,6 +13,15 @@ class TelemetryRow(SQLModel, table=True):
     iout_a: float
     mode: str
     power_w: float = 0.0
+
+
+class WavemakerPreset(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    description: str = ""
+    cycle_duration_sec: int = 60
+    is_built_in: bool = False
+    flow_curves: dict = Field(default={}, sa_column=Column(JSON))
 
 
 def make_db(db_url: str):
@@ -57,3 +66,44 @@ class Store:
             )
             results = s.exec(statement).all()
             return [{"timestamp": r.ts, "vout_v": r.vout_v, "iout_a": r.iout_a, "power_w": r.power_w} for r in results]
+    
+    def get_all_presets(self) -> List[WavemakerPreset]:
+        with Session(self.engine) as s:
+            statement = select(WavemakerPreset).order_by(WavemakerPreset.name)
+            results = s.exec(statement).all()
+            return list(results)
+    
+    def get_preset(self, preset_id: int) -> Optional[WavemakerPreset]:
+        with Session(self.engine) as s:
+            return s.get(WavemakerPreset, preset_id)
+    
+    def create_preset(self, preset: WavemakerPreset) -> WavemakerPreset:
+        with Session(self.engine) as s:
+            s.add(preset)
+            s.commit()
+            s.refresh(preset)
+            return preset
+    
+    def update_preset(self, preset_id: int, **kwargs) -> Optional[WavemakerPreset]:
+        with Session(self.engine) as s:
+            preset = s.get(WavemakerPreset, preset_id)
+            if not preset:
+                return None
+            if preset.is_built_in:
+                return None
+            for key, value in kwargs.items():
+                if hasattr(preset, key):
+                    setattr(preset, key, value)
+            s.add(preset)
+            s.commit()
+            s.refresh(preset)
+            return preset
+    
+    def delete_preset(self, preset_id: int) -> bool:
+        with Session(self.engine) as s:
+            preset = s.get(WavemakerPreset, preset_id)
+            if not preset or preset.is_built_in:
+                return False
+            s.delete(preset)
+            s.commit()
+            return True

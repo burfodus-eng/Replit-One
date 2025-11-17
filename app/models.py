@@ -124,3 +124,19 @@ class WavemakerHistoryPoint(BaseModel):
     power_w: float
     duty_pct: float
     pulse_duty_ratio: float
+
+
+class WavemakerPresetResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    cycle_duration_sec: int
+    is_built_in: bool
+    flow_curves: dict
+
+
+class WavemakerPresetRequest(BaseModel):
+    name: str
+    description: Optional[str] = ""
+    cycle_duration_sec: Optional[int] = 60
+    flow_curves: Optional[dict] = {}

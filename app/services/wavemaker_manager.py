@@ -160,9 +160,31 @@ class WavemakerManager:
         }
         
         self.last_telemetry_time = 0.0
+        self.preset_manager = None
         
+    def set_preset_manager(self, preset_manager):
+        """Inject preset manager for preset-based control"""
+        self.preset_manager = preset_manager
+    
+    def apply_preset_power_levels(self):
+        """Apply power levels from active preset to all channels"""
+        if not self.preset_manager:
+            return
+        
+        power_levels = self.preset_manager.get_current_power_levels()
+        
+        for wavemaker_num, power_pct in power_levels.items():
+            channel_index = wavemaker_num - 1
+            if 0 <= channel_index < len(self.channels):
+                channel = self.channels[channel_index]
+                channel.mode = "constant"
+                channel.target_power_pct = int(power_pct)
+    
     def update_all(self, t_now: float):
         """Update all channels (20 Hz control loop)"""
+        if self.preset_manager and self.preset_manager.get_active_preset():
+            self.apply_preset_power_levels()
+        
         for channel in self.channels:
             channel.update_pwm(t_now, self.hal)
             

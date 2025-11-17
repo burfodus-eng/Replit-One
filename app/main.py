@@ -13,7 +13,8 @@ from .services.system_health import SystemHealthService
 from .services.events import EventsService
 from .services.power_allocator import PowerAllocator
 from .services.wavemaker_manager import WavemakerManager
-from .routers import telemetry, control, config_api, automation, arrays, history, wavemakers
+from .services.preset_manager import PresetManager
+from .routers import telemetry, control, config_api, automation, arrays, history, wavemakers, presets
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -41,6 +42,7 @@ app.include_router(automation.router, prefix='/api')
 app.include_router(arrays.router, prefix='/api')
 app.include_router(history.router)
 app.include_router(wavemakers.router, prefix='/api')
+app.include_router(presets.router, prefix='/api')
 
 
 @app.on_event('startup')
@@ -79,6 +81,12 @@ async def startup():
         logger.info(f"Initializing database at {DB_URL}...")
         engine = make_db(DB_URL)
         app.state.store = Store(engine)
+        
+        logger.info("Initializing preset manager...")
+        app.state.preset_manager = PresetManager(app.state.store)
+        
+        logger.info("Connecting preset manager to wavemaker manager...")
+        app.state.wavemaker_manager.set_preset_manager(app.state.preset_manager)
         
         logger.info("Creating initial snapshot...")
         app.state.latest = app.state.stage_manager.snapshot()

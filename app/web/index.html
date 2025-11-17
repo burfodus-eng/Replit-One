@@ -584,6 +584,37 @@
       padding: 0 4px;
     }
 
+    .preset-controls {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+    }
+
+    .preset-selector-container {
+      display: flex;
+      align-items: center;
+      flex: 1;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
     .wavemakers-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
@@ -674,6 +705,17 @@
 
     <div class="wavemakers-section">
       <div class="section-header">🌊 Wavemakers</div>
+      
+      <div class="preset-controls">
+        <div class="preset-selector-container">
+          <label style="color: white; margin-right: 10px;">Flow Preset:</label>
+          <select id="presetSelector" class="mode-selector" style="flex: 1; max-width: 300px;" onchange="activatePreset(this.value)">
+            <option value="">Manual Control</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="openPresetEditor()" style="margin-left: 15px;">Design Presets</button>
+      </div>
+      
       <div class="wavemakers-grid" id="wavemakersGrid"></div>
     </div>
   </div>
@@ -1126,6 +1168,61 @@
       }, 300));
     }
 
+    let presetsData = [];
+    let activePresetId = null;
+
+    async function loadPresets() {
+      try {
+        const res = await fetch('/api/presets');
+        presetsData = await res.json();
+        
+        const selector = document.getElementById('presetSelector');
+        selector.innerHTML = '<option value="">Manual Control</option>' +
+          presetsData.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        
+        await loadActivePreset();
+      } catch (err) {
+        console.error('Failed to load presets:', err);
+      }
+    }
+
+    async function loadActivePreset() {
+      try {
+        const res = await fetch('/api/presets/active/status');
+        const data = await res.json();
+        
+        if (data.active_preset) {
+          activePresetId = data.active_preset.id;
+          document.getElementById('presetSelector').value = activePresetId;
+        } else {
+          activePresetId = null;
+          document.getElementById('presetSelector').value = '';
+        }
+      } catch (err) {
+        console.error('Failed to load active preset:', err);
+      }
+    }
+
+    async function activatePreset(presetId) {
+      if (!presetId) {
+        activePresetId = null;
+        return;
+      }
+      
+      try {
+        await fetch(`/api/presets/${presetId}/activate`, {
+          method: 'POST'
+        });
+        activePresetId = parseInt(presetId);
+      } catch (err) {
+        console.error('Failed to activate preset:', err);
+      }
+    }
+
+    function openPresetEditor() {
+      alert('Preset editor coming soon! This will let you design custom flow patterns with graphical curve editor.');
+    }
+
     function showSettings(arrayId) {
       const array = arraysData.find(a => a.id === arrayId);
       if (!array) return;
@@ -1433,6 +1530,7 @@
       await Promise.all([
         loadArrays(),
         loadWavemakers(),
+        loadPresets(),
         loadSystemLoad(),
         loadTasks(),
         loadEvents(),
