@@ -1302,6 +1302,19 @@
     </div>
   </div>
 
+  <div class="modal" id="calendarModal">
+    <div class="modal-content" style="width: 95vw; height: 90vh; max-width: none;">
+      <div class="modal-header" style="margin-bottom: 24px;">
+        <div class="modal-title">Weekly Schedule Calendar</div>
+        <button class="close-btn" onclick="closeCalendar()">✕</button>
+      </div>
+      
+      <div id="calendarFullView" style="height: calc(100% - 80px); overflow: auto;">
+        <div class="calendar-week" id="calendarWeekFull"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const VERSION = 'v1.0.0';
     
