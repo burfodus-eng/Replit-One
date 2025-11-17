@@ -1,8 +1,9 @@
 # Reef Controller
 
-**Current Version: v1.1.0**
+**Current Version: v1.2.0**
 
 ## Version History
+- **v1.2.0** (Nov 17, 2025): Added graphical preset editor with Canvas-based curve design, interactive keyframe editing, and automated scheduler for time-based preset switching
 - **v1.1.0** (Nov 17, 2025): Added preset-based wavemaker control system with 6 built-in flow patterns, interpolated power curves, REST API, and frontend preset selector
 - **v1.0.0**: Initial release with LED control, battery management, individual wavemaker control, and power allocation
 
@@ -21,6 +22,7 @@ The Reef Controller is built upon a FastAPI backend and a vanilla JavaScript fro
 - **Interactive Modals**: Settings and history are managed through full-screen modal dialogs, including drag-to-reorder priority lists.
 - **Visual Feedback**: Disabled LEDs are visually represented as off (gray), and array cards display configured intensity limits.
 - **Chart Modals**: History and power charts utilize 90% viewport width for maximum data visibility.
+- **Preset Editor**: Full-screen modal with sidebar preset list, Canvas-based graphical curve editor for all 6 wavemakers, and interactive keyframe manipulation (click to add, drag to move, Shift+click to delete).
 
 ### Technical Implementations
 - **Backend (FastAPI)**:
@@ -35,7 +37,8 @@ The Reef Controller is built upon a FastAPI backend and a vanilla JavaScript fro
     - Implements local state persistence for sliders and toggles (e.g., 5-second timeout for intensity sliders) to maintain user input during UI refreshes.
 
 ### Feature Specifications
-- **Wavemaker Preset System**: Coordinated flow pattern control across all 6 wavemakers using preset-based management. Features 6 built-in presets (Gentle Flow, Pulse, Gyre Clockwise/Counter-Clockwise, Feed Mode, Random Reef) with custom flow curves per wavemaker. PresetManager interpolates power values from keyframe-based curves every 20Hz for smooth transitions. REST API supports preset CRUD operations, activation, and real-time status. Frontend includes preset selector dropdown and design interface.
+- **Wavemaker Preset System**: Coordinated flow pattern control across all 6 wavemakers using preset-based management. Features 6 built-in presets (Gentle Flow, Pulse, Gyre Clockwise/Counter-Clockwise, Feed Mode, Random Reef) with custom flow curves per wavemaker. PresetManager interpolates power values from keyframe-based curves every 20Hz for smooth transitions. REST API supports preset CRUD operations, activation, and real-time status. Frontend includes preset selector dropdown, graphical curve editor with Canvas-based interactive keyframe editing (click to add, drag to move, Shift+click to delete), and automated scheduler for time-based preset switching.
+- **Automation Scheduler**: Time-based preset activation system with minute-precision execution. Supports scheduled tasks with optional day-of-week filtering, database persistence (ScheduledTaskRow), and automatic execution via JobScheduler. REST API provides CRUD operations for scheduled tasks (/api/automation/scheduled) and upcoming task queries. Integrated with PresetManager for seamless automated preset switching throughout the day.
 - **Wavemaker Subsystem**: Supports 6 independent channels with patterns like Off, Constant, Pulse (configurable duty ratio and intensity), Gyre Left/Right (synchronized sinusoidal waves), and Random Reef (smooth random transitions). Includes API endpoints for status, control, and 15-minute history.
 - **LED Control**: Granular control over 3 arrays, each with 6 individual LEDs. Each LED has configurable name, intensity limit, and priority. Real-time telemetry for each LED.
 - **Intelligent Power Management**: Automatically sheds lowest-priority loads when the power budget is exceeded, with hysteresis for stable operation. Tracks all shedding/restoration events.
