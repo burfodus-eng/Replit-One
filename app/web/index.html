@@ -803,8 +803,47 @@
     }
 
     .btn-primary:hover {
-      transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .toast-notification {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      color: #2d3748;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      font-weight: 600;
+      font-size: 16px;
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    .toast-notification.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .toast-notification.error {
+      background: #f56565;
+      color: white;
+    }
+
+    .toast-notification.success {
+      background: #48bb78;
+      color: white;
+    }
+
+    .toast-notification.info {
+      background: #667eea;
+      color: white;
     }
 
     .wavemakers-grid {
@@ -868,6 +907,7 @@
   </style>
 </head>
 <body>
+  <div id="toast" class="toast-notification"></div>
   <div class="container">
     <header>
       <div class="site-title">
@@ -922,7 +962,7 @@
         </div>
         <button class="btn-primary" onclick="openPresetEditor()" style="margin-left: 15px;">Design Presets</button>
         <button class="btn-primary" onclick="openScheduler()" style="margin-left: 15px;">Scheduler</button>
-        <button id="feedModeButton" class="btn-primary" onclick="startFeedMode()" style="margin-left: 15px; background: #48bb78;">Feed Mode</button>
+        <button id="feedModeButton" class="btn-primary" onclick="toggleFeedMode()" style="margin-left: 15px; background: #48bb78;">Feed Mode</button>
       </div>
       
       <div class="wavemakers-grid" id="wavemakersGrid"></div>
@@ -1167,6 +1207,16 @@
     let wavemakerDebounce = new Map();
     let localWavemakerPower = new Map();
     let localWavemakerMode = new Map();
+
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast-notification show ' + type;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
 
     function updateClock() {
       const now = new Date();
@@ -1671,25 +1721,54 @@
 
     let feedModeActive = false;
     
+    async function toggleFeedMode() {
+      if (feedModeActive) {
+        await stopFeedMode();
+      } else {
+        await startFeedMode();
+      }
+    }
+    
     async function startFeedMode() {
       try {
         const res = await fetch('/api/feed/start', { method: 'POST' });
         if (!res.ok) {
           const error = await res.json();
-          alert(`Feed mode failed: ${error.detail || 'Unknown error'}`);
+          showToast(`Feed mode failed: ${error.detail || 'Unknown error'}`, 'error');
           return;
         }
         const data = await res.json();
         if (data.success) {
           console.log('[Feed Mode] Started successfully');
+          showToast('Feed mode started - wavemakers paused for 10 minutes', 'success');
           await loadFeedModeStatus();
         } else {
           console.log('[Feed Mode] Failed to start:', data.message);
-          alert(`Failed to start feed mode: ${data.message}`);
+          showToast(`Failed to start feed mode: ${data.message}`, 'error');
         }
       } catch (err) {
         console.error('[Feed Mode] Error starting:', err);
-        alert('Error starting feed mode');
+        showToast('Error starting feed mode', 'error');
+      }
+    }
+    
+    async function stopFeedMode() {
+      try {
+        const res = await fetch('/api/feed/stop', { method: 'POST' });
+        if (!res.ok) {
+          const error = await res.json();
+          showToast(`Failed to stop feed mode: ${error.detail || 'Unknown error'}`, 'error');
+          return;
+        }
+        const data = await res.json();
+        if (data.success) {
+          console.log('[Feed Mode] Stopped successfully');
+          showToast('Feed mode cancelled', 'info');
+          await loadFeedModeStatus();
+        }
+      } catch (err) {
+        console.error('[Feed Mode] Error stopping:', err);
+        showToast('Error stopping feed mode', 'error');
       }
     }
     
@@ -1704,7 +1783,7 @@
           feedModeActive = true;
           const minutes = Math.floor(data.remaining_seconds / 60);
           const seconds = data.remaining_seconds % 60;
-          button.textContent = `Feeding (${minutes}:${seconds.toString().padStart(2, '0')})`;
+          button.textContent = `Cancel Feeding (${minutes}:${seconds.toString().padStart(2, '0')})`;
           button.style.background = '#f56565';
           button.disabled = false;
         } else {
@@ -1805,7 +1884,7 @@
       const cycleDuration = parseInt(document.getElementById('presetCycleDuration').value);
       
       if (!name) {
-        alert('Please enter a preset name');
+        showToast('Please enter a preset name', 'error');
         return;
       }
       
@@ -1846,7 +1925,7 @@
         await loadPresets();
       } catch (err) {
         console.error('Failed to save preset:', err);
-        alert('Failed to save preset. Check console for details.');
+        showToast('Failed to save preset. Check console for details.', 'error');
       }
     }
     
@@ -1869,7 +1948,7 @@
         createNewPreset();
       } catch (err) {
         console.error('Failed to delete preset:', err);
-        alert('Failed to delete preset.');
+        showToast('Failed to delete preset.', 'error');
       }
     }
     
@@ -2185,7 +2264,7 @@
       const enabled = document.getElementById('taskEnabled').checked;
       
       if (!name || !time || !presetId) {
-        alert('Please fill in all required fields');
+        showToast('Please fill in all required fields', 'error');
         return;
       }
       
@@ -2224,7 +2303,7 @@
         await loadTasks();
       } catch (err) {
         console.error('Failed to save scheduled task:', err);
-        alert('Failed to save task');
+        showToast('Failed to save task', 'error');
       }
     }
     
@@ -2244,7 +2323,7 @@
         createNewScheduledTask();
       } catch (err) {
         console.error('Failed to delete scheduled task:', err);
-        alert('Failed to delete task');
+        showToast('Failed to delete task', 'error');
       }
     }
 
