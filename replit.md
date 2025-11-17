@@ -1,6 +1,10 @@
 # Reef Controller
 
-**Current Version: v1.0.0**
+**Current Version: v1.1.0**
+
+## Version History
+- **v1.1.0** (Nov 17, 2025): Added preset-based wavemaker control system with 6 built-in flow patterns, interpolated power curves, REST API, and frontend preset selector
+- **v1.0.0**: Initial release with LED control, battery management, individual wavemaker control, and power allocation
 
 ## Overview
 Reef Controller is a sophisticated web-based application built with FastAPI, designed for real-time monitoring and control of reef aquarium equipment. Its primary purpose is to manage LED lighting arrays, battery backup systems, and wave pumps through an intuitive web interface. The project aims to provide comprehensive control over an aquarium environment, featuring real-time telemetry, interactive controls, and intelligent power management capabilities. Key ambitions include offering production-ready wave pump control with various patterns, granular per-LED control with intelligent power shedding, and a touch-optimized user interface for easy interaction.
@@ -31,6 +35,7 @@ The Reef Controller is built upon a FastAPI backend and a vanilla JavaScript fro
     - Implements local state persistence for sliders and toggles (e.g., 5-second timeout for intensity sliders) to maintain user input during UI refreshes.
 
 ### Feature Specifications
+- **Wavemaker Preset System**: Coordinated flow pattern control across all 6 wavemakers using preset-based management. Features 6 built-in presets (Gentle Flow, Pulse, Gyre Clockwise/Counter-Clockwise, Feed Mode, Random Reef) with custom flow curves per wavemaker. PresetManager interpolates power values from keyframe-based curves every 20Hz for smooth transitions. REST API supports preset CRUD operations, activation, and real-time status. Frontend includes preset selector dropdown and design interface.
 - **Wavemaker Subsystem**: Supports 6 independent channels with patterns like Off, Constant, Pulse (configurable duty ratio and intensity), Gyre Left/Right (synchronized sinusoidal waves), and Random Reef (smooth random transitions). Includes API endpoints for status, control, and 15-minute history.
 - **LED Control**: Granular control over 3 arrays, each with 6 individual LEDs. Each LED has configurable name, intensity limit, and priority. Real-time telemetry for each LED.
 - **Intelligent Power Management**: Automatically sheds lowest-priority loads when the power budget is exceeded, with hysteresis for stable operation. Tracks all shedding/restoration events.
