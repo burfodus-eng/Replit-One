@@ -1,8 +1,9 @@
 # Reef Controller
 
-**Current Version: v1.5.1**
+**Current Version: v1.5.2**
 
 ## Version History
+- **v1.5.2** (Nov 17, 2025): Improved calendar visibility with dark borders and white backgrounds for readable text on purple gradient, removed duplicate 8am task from database, updated conflict detection to be type-specific (only preset_activation tasks conflict with each other, allowing future pump/feeding schedules to coexist with flow presets)
 - **v1.5.1** (Nov 17, 2025): Fixed calendar grid layout using CSS Grid (proper 8×25 grid with time labels + 7 day columns) and added comprehensive conflict detection system - client-side validation shows immediate toast feedback, server-side authoritative checks return HTTP 409 on scheduling conflicts, prevents multiple presets at same time with clear error messages describing conflicts
 - **v1.5.0** (Nov 17, 2025): Created dedicated full-screen Schedule Calendar modal (95vw×90vh) accessible via new "Schedule Calendar" button, featuring weekly grid display (24 hours x 7 days) with visual task placement, clickable cells to create tasks with pre-filled time/day, and clickable task badges to edit existing tasks - calendar opens/closes independently while scheduler modal remains simple list-based editor
 - **v1.4.0** (Nov 17, 2025): Added calendar view to scheduler modal with weekly grid display (24 hours x 7 days), visual task placement at scheduled times, clickable cells to create new tasks with pre-filled time/day, and clickable task badges to edit existing tasks using proper selectTaskForEditing() integration
