@@ -1,8 +1,9 @@
 # Reef Controller
 
-**Current Version: v1.4.0**
+**Current Version: v1.5.0**
 
 ## Version History
+- **v1.5.0** (Nov 17, 2025): Created dedicated full-screen Schedule Calendar modal (95vw×90vh) accessible via new "Schedule Calendar" button, featuring weekly grid display (24 hours x 7 days) with visual task placement, clickable cells to create tasks with pre-filled time/day, and clickable task badges to edit existing tasks - calendar opens/closes independently while scheduler modal remains simple list-based editor
 - **v1.4.0** (Nov 17, 2025): Added calendar view to scheduler modal with weekly grid display (24 hours x 7 days), visual task placement at scheduled times, clickable cells to create new tasks with pre-filled time/day, and clickable task badges to edit existing tasks using proper selectTaskForEditing() integration
 - **v1.3.1** (Nov 17, 2025): UX polish - implemented toast notification system to replace iframe-blocking alert() calls with non-blocking success/error/info toasts, updated Feed Mode button to toggle functionality (click to start, click again to cancel), removed button hover bounce effects for cleaner interaction
 - **v1.3.0** (Nov 17, 2025): Added feed mode system with manual button that pauses all wavemakers for 10 minutes and automatically restores previous preset, built complete scheduler UI modal for creating/editing/deleting scheduled preset activations with time picker and day-of-week filtering, integrated feed mode with scheduler (pauses scheduled changes during feeding), improved feed mode robustness with name-based preset lookup and proper HTTP error handling
