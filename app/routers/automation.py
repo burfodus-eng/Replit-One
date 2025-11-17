@@ -65,9 +65,45 @@ async def get_all_scheduled_tasks(request: Request):
     ]
 
 
+def check_schedule_conflict(store, time: str, days_of_week, exclude_task_id=None):
+    """Check if a scheduled task conflicts with existing tasks at the same time"""
+    all_tasks = store.get_all_scheduled_tasks()
+    
+    for task in all_tasks:
+        if task.id == exclude_task_id:
+            continue
+        if not task.enabled:
+            continue
+        if task.time != time:
+            continue
+        
+        task_days = json.loads(task.days_of_week) if task.days_of_week else []
+        new_days = days_of_week or []
+        
+        if len(task_days) == 0 and len(new_days) == 0:
+            return task
+        if len(task_days) == 0 or len(new_days) == 0:
+            return task
+        
+        if any(day in new_days for day in task_days):
+            return task
+    
+    return None
+
+
 @router.post("/automation/scheduled")
 async def create_scheduled_task(task_req: ScheduledTaskRequest, request: Request):
     store = request.app.state.store
+    
+    if task_req.enabled:
+        conflict = check_schedule_conflict(store, task_req.time, task_req.days_of_week)
+        if conflict:
+            day_text = "on selected days" if task_req.days_of_week else "every day"
+            raise HTTPException(
+                status_code=409,
+                detail=f'Scheduling conflict: "{conflict.name}" already scheduled at {task_req.time} {day_text}'
+            )
+    
     task_row = ScheduledTaskRow(
         name=task_req.name,
         task_type=task_req.task_type,
@@ -91,6 +127,16 @@ async def create_scheduled_task(task_req: ScheduledTaskRequest, request: Request
 @router.put("/automation/scheduled/{task_id}")
 async def update_scheduled_task(task_id: int, task_req: ScheduledTaskRequest, request: Request):
     store = request.app.state.store
+    
+    if task_req.enabled:
+        conflict = check_schedule_conflict(store, task_req.time, task_req.days_of_week, exclude_task_id=task_id)
+        if conflict:
+            day_text = "on selected days" if task_req.days_of_week else "every day"
+            raise HTTPException(
+                status_code=409,
+                detail=f'Scheduling conflict: "{conflict.name}" already scheduled at {task_req.time} {day_text}'
+            )
+    
     update_data = {
         "name": task_req.name,
         "task_type": task_req.task_type,

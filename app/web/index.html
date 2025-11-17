@@ -886,23 +886,25 @@
       min-width: 600px;
     }
 
-    .calendar-header {
+    .calendar-day-header {
       text-align: center;
       font-weight: 600;
-      font-size: 12px;
+      font-size: 13px;
       color: rgba(255, 255, 255, 0.9);
-      padding: 8px 4px;
+      padding: 10px 4px;
       background: rgba(255, 255, 255, 0.1);
       border-radius: 6px;
-      margin-bottom: 4px;
     }
 
-    .calendar-time-label {
+    .calendar-hour-label {
       font-size: 11px;
       color: rgba(255, 255, 255, 0.7);
-      padding: 6px 4px;
+      padding: 8px 4px;
       text-align: right;
       font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
     }
 
     .calendar-cell {
@@ -2369,6 +2371,24 @@
       renderScheduledTasksList();
     }
     
+    function checkScheduleConflict(time, daysOfWeek, excludeTaskId = null) {
+      const conflicts = allScheduledTasks.filter(task => {
+        if (task.id === excludeTaskId) return false;
+        if (!task.enabled) return false;
+        if (task.time !== time) return false;
+        
+        const taskDays = task.days_of_week || [];
+        const newDays = daysOfWeek || [];
+        
+        if (taskDays.length === 0 && newDays.length === 0) return true;
+        if (taskDays.length === 0 || newDays.length === 0) return true;
+        
+        return taskDays.some(day => newDays.includes(day));
+      });
+      
+      return conflicts;
+    }
+
     async function saveScheduledTask() {
       const name = document.getElementById('taskName').value.trim();
       const time = document.getElementById('taskTime').value;
@@ -2387,6 +2407,16 @@
         }
       }
       
+      if (enabled) {
+        const conflicts = checkScheduleConflict(time, daysOfWeek.length > 0 ? daysOfWeek : null, selectedTaskId);
+        if (conflicts.length > 0) {
+          const conflictNames = conflicts.map(c => c.name).join(', ');
+          const dayText = daysOfWeek.length > 0 ? 'on selected days' : 'every day';
+          showToast(`Scheduling conflict: "${conflictNames}" already scheduled at ${time} ${dayText}`, 'error');
+          return;
+        }
+      }
+      
       const taskData = {
         name: name,
         task_type: 'preset_activation',
@@ -2397,20 +2427,28 @@
       };
       
       try {
+        let response;
         if (selectedTaskId) {
-          await fetch(`/api/automation/scheduled/${selectedTaskId}`, {
+          response = await fetch(`/api/automation/scheduled/${selectedTaskId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(taskData)
           });
         } else {
-          await fetch('/api/automation/scheduled', {
+          response = await fetch('/api/automation/scheduled', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(taskData)
           });
         }
         
+        if (!response.ok) {
+          const error = await response.json();
+          showToast(error.detail || 'Failed to save task', 'error');
+          return;
+        }
+        
+        showToast(selectedTaskId ? 'Task updated successfully' : 'Task created successfully', 'success');
         await loadAllScheduledTasks();
         await loadTasks();
       } catch (err) {
@@ -2457,15 +2495,12 @@
       
       let html = '<div class="calendar-grid">';
       
-      html += '<div class="calendar-header">';
       html += '<div class="calendar-hour-label"></div>';
       days.forEach(day => {
         html += `<div class="calendar-day-header">${day}</div>`;
       });
-      html += '</div>';
       
       hours.forEach(hour => {
-        html += `<div class="calendar-row">`;
         html += `<div class="calendar-hour-label">${hour.toString().padStart(2, '0')}:00</div>`;
         
         for (let day = 0; day < 7; day++) {
@@ -2487,7 +2522,6 @@
           });
           html += '</div>';
         }
-        html += '</div>';
       });
       
       html += '</div>';
