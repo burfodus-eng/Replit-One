@@ -1230,18 +1230,9 @@
         <div class="preset-list-header">
           <span>Scheduled Tasks</span>
         </div>
-        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-          <button id="viewListBtn" class="view-toggle-btn active" onclick="switchSchedulerView('list')">📋 List</button>
-          <button id="viewCalendarBtn" class="view-toggle-btn" onclick="switchSchedulerView('calendar')">📅 Calendar</button>
-        </div>
         <button class="btn-new-preset" onclick="createNewScheduledTask()">+ New Task</button>
         <div style="height: 16px;"></div>
-        <div id="listViewContainer">
-          <div class="preset-list" id="scheduledTasksList"></div>
-        </div>
-        <div id="calendarViewContainer" style="display: none;">
-          <div class="calendar-week" id="calendarWeek"></div>
-        </div>
+        <div class="preset-list" id="scheduledTasksList"></div>
       </div>
       
       <div class="preset-editor-main">
