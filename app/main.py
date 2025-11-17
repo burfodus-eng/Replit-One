@@ -24,7 +24,14 @@ app.mount('/ui', StaticFiles(directory='app/web', html=True), name='ui')
 
 @app.get('/')
 async def root():
-    return FileResponse('app/web/index.html')
+    return FileResponse(
+        'app/web/index.html',
+        headers={
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        }
+    )
 
 
 app.include_router(telemetry.router, prefix='/api')

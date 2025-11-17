@@ -985,22 +985,33 @@
 
     async function loadWavemakers() {
       try {
+        console.log('[Wavemakers] Loading wavemaker data...');
         const res = await fetch('/api/wavemakers');
         const data = await res.json();
         wavemakersData = data || [];
+        console.log('[Wavemakers] Loaded', wavemakersData.length, 'wavemakers');
         renderWavemakers();
       } catch (err) {
-        console.error('Failed to load wavemakers:', err);
+        console.error('[Wavemakers] Failed to load:', err);
       }
     }
 
     function renderWavemakers() {
+      console.log('[Wavemakers] Rendering wavemakers section...');
       const grid = document.getElementById('wavemakersGrid');
       
+      if (!grid) {
+        console.error('[Wavemakers] ERROR: wavemakersGrid element not found!');
+        return;
+      }
+      
       if (!wavemakersData || wavemakersData.length === 0) {
+        console.log('[Wavemakers] No wavemaker data to render');
         grid.innerHTML = '<p style="color: white; padding: 20px;">No wavemakers configured</p>';
         return;
       }
+      
+      console.log('[Wavemakers] Rendering', wavemakersData.length, 'wavemaker cards');
       
       grid.innerHTML = wavemakersData.map(wm => {
         const power = localWavemakerPower.has(wm.id) ? localWavemakerPower.get(wm.id) : Math.round(wm.target_power_pct);
