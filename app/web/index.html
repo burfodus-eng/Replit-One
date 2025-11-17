@@ -846,6 +846,104 @@
       color: white;
     }
 
+    .view-toggle-btn {
+      flex: 1;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.7);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .view-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .view-toggle-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+    }
+
+    .calendar-week {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 8px;
+      overflow-x: auto;
+      max-height: calc(100vh - 340px);
+      overflow-y: auto;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: 60px repeat(7, 1fr);
+      gap: 4px;
+      min-width: 600px;
+    }
+
+    .calendar-header {
+      text-align: center;
+      font-weight: 600;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.9);
+      padding: 8px 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      margin-bottom: 4px;
+    }
+
+    .calendar-time-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      padding: 6px 4px;
+      text-align: right;
+      font-weight: 500;
+    }
+
+    .calendar-cell {
+      min-height: 40px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.2s;
+      padding: 2px;
+    }
+
+    .calendar-cell:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .calendar-task {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 6px;
+      border-radius: 3px;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .calendar-task:hover {
+      transform: scale(1.02);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .calendar-task.disabled {
+      opacity: 0.5;
+      background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+    }
+
     .wavemakers-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
@@ -1131,9 +1229,18 @@
         <div class="preset-list-header">
           <span>Scheduled Tasks</span>
         </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <button id="viewListBtn" class="view-toggle-btn active" onclick="switchSchedulerView('list')">📋 List</button>
+          <button id="viewCalendarBtn" class="view-toggle-btn" onclick="switchSchedulerView('calendar')">📅 Calendar</button>
+        </div>
         <button class="btn-new-preset" onclick="createNewScheduledTask()">+ New Task</button>
         <div style="height: 16px;"></div>
-        <div class="preset-list" id="scheduledTasksList"></div>
+        <div id="listViewContainer">
+          <div class="preset-list" id="scheduledTasksList"></div>
+        </div>
+        <div id="calendarViewContainer" style="display: none;">
+          <div class="calendar-week" id="calendarWeek"></div>
+        </div>
       </div>
       
       <div class="preset-editor-main">
@@ -2325,6 +2432,81 @@
         console.error('Failed to delete scheduled task:', err);
         showToast('Failed to delete task', 'error');
       }
+    }
+
+    function switchSchedulerView(view) {
+      const listBtn = document.getElementById('viewListBtn');
+      const calendarBtn = document.getElementById('viewCalendarBtn');
+      const listContainer = document.getElementById('listViewContainer');
+      const calendarContainer = document.getElementById('calendarViewContainer');
+      
+      if (view === 'list') {
+        listBtn.classList.add('active');
+        calendarBtn.classList.remove('active');
+        listContainer.style.display = 'block';
+        calendarContainer.style.display = 'none';
+      } else {
+        listBtn.classList.remove('active');
+        calendarBtn.classList.add('active');
+        listContainer.style.display = 'none';
+        calendarContainer.style.display = 'block';
+        renderCalendar();
+      }
+    }
+
+    function renderCalendar() {
+      const container = document.getElementById('calendarWeek');
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const hours = Array.from({length: 24}, (_, i) => i);
+      
+      let html = '<div class="calendar-grid">';
+      
+      html += '<div></div>';
+      days.forEach((day, index) => {
+        html += `<div class="calendar-header">${day}</div>`;
+      });
+      
+      hours.forEach(hour => {
+        const timeLabel = `${hour.toString().padStart(2, '0')}:00`;
+        html += `<div class="calendar-time-label">${timeLabel}</div>`;
+        
+        for (let day = 0; day < 7; day++) {
+          const tasksAtThisTime = allScheduledTasks.filter(task => {
+            const taskHour = parseInt(task.time.split(':')[0]);
+            const taskMinute = parseInt(task.time.split(':')[1]);
+            const matchesHour = taskHour === hour;
+            const matchesDay = !task.days_of_week || task.days_of_week.length === 0 || task.days_of_week.includes(day);
+            return matchesHour && matchesDay;
+          });
+          
+          html += `<div class="calendar-cell" onclick="handleCalendarCellClick(${hour}, ${day})">`;
+          tasksAtThisTime.forEach(task => {
+            const disabledClass = task.enabled ? '' : ' disabled';
+            const presetName = allPresets.find(p => p.id === task.preset_id)?.name || 'Unknown';
+            html += `<div class="calendar-task${disabledClass}" onclick="event.stopPropagation(); selectScheduledTask(${task.id})" title="${task.name} - ${presetName}">
+              ${task.time} ${task.name}
+            </div>`;
+          });
+          html += '</div>';
+        }
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function handleCalendarCellClick(hour, dayOfWeek) {
+      createNewScheduledTask();
+      
+      const timeString = `${hour.toString().padStart(2, '0')}:00`;
+      document.getElementById('taskTime').value = timeString;
+      
+      const checkbox = document.getElementById(`day-${dayOfWeek}`);
+      if (checkbox) {
+        checkbox.checked = true;
+      }
+      
+      switchSchedulerView('list');
     }
 
     function showSettings(arrayId) {
