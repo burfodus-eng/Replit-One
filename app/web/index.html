@@ -2483,7 +2483,7 @@
           tasksAtThisTime.forEach(task => {
             const disabledClass = task.enabled ? '' : ' disabled';
             const presetName = allPresets.find(p => p.id === task.preset_id)?.name || 'Unknown';
-            html += `<div class="calendar-task${disabledClass}" onclick="event.stopPropagation(); selectScheduledTask(${task.id})" title="${task.name} - ${presetName}">
+            html += `<div class="calendar-task${disabledClass}" onclick="event.stopPropagation(); handleTaskClick(${task.id})" title="${task.name} - ${presetName}">
               ${task.time} ${task.name}
             </div>`;
           });
@@ -2506,6 +2506,11 @@
         checkbox.checked = true;
       }
       
+      switchSchedulerView('list');
+    }
+
+    function handleTaskClick(taskId) {
+      selectTaskForEditing(taskId);
       switchSchedulerView('list');
     }
 

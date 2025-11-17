@@ -1,8 +1,9 @@
 # Reef Controller
 
-**Current Version: v1.3.1**
+**Current Version: v1.4.0**
 
 ## Version History
+- **v1.4.0** (Nov 17, 2025): Added calendar view to scheduler modal with weekly grid display (24 hours x 7 days), visual task placement at scheduled times, clickable cells to create new tasks, and clickable task badges to edit existing tasks
 - **v1.3.1** (Nov 17, 2025): UX polish - implemented toast notification system to replace iframe-blocking alert() calls with non-blocking success/error/info toasts, updated Feed Mode button to toggle functionality (click to start, click again to cancel), removed button hover bounce effects for cleaner interaction
 - **v1.3.0** (Nov 17, 2025): Added feed mode system with manual button that pauses all wavemakers for 10 minutes and automatically restores previous preset, built complete scheduler UI modal for creating/editing/deleting scheduled preset activations with time picker and day-of-week filtering, integrated feed mode with scheduler (pauses scheduled changes during feeding), improved feed mode robustness with name-based preset lookup and proper HTTP error handling
 - **v1.2.3** (Nov 17, 2025): UX improvements - changed wavemaker channel display from 0-5 to user-friendly 1-6 numbering, added individual "Clear" buttons to each wavemaker curve editor for resetting curves without deleting presets
@@ -28,6 +29,7 @@ The Reef Controller is built upon a FastAPI backend and a vanilla JavaScript fro
 - **Visual Feedback**: Disabled LEDs are visually represented as off (gray), and array cards display configured intensity limits.
 - **Chart Modals**: History and power charts utilize 90% viewport width for maximum data visibility.
 - **Preset Editor**: Full-screen modal with sidebar preset list, Canvas-based graphical curve editor for all 6 wavemakers, and interactive keyframe manipulation (click to add, drag to move, Shift+click to delete).
+- **Scheduler Calendar View**: Toggle between list and calendar views in scheduler modal. Calendar displays weekly grid (24 hours x 7 days) with scheduled tasks visually placed at their times. Click calendar cells to create new tasks with pre-filled time/day. Click task badges to edit. Disabled tasks shown in gray.
 - **Toast Notifications**: Non-blocking notification system replaces all alert() calls to prevent iframe blocking, with success (green), error (red), and info (blue) variants that auto-dismiss after 3 seconds.
 - **Clean Interactions**: Removed button hover bounce effects for smoother, more professional feel. Feed Mode button toggles between start/cancel states with clear visual feedback.
 
