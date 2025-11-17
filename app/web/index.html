@@ -726,6 +726,10 @@
       const time = now.toLocaleTimeString('en-US', { hour12: false });
       document.getElementById('liveClock').textContent = time;
     }
+    
+    function updateVersion() {
+      document.getElementById('versionBadge').textContent = VERSION;
+    }
 
     async function loadArrays() {
       try {
@@ -1422,6 +1426,8 @@
     function init() {
       updateClock();
       setInterval(updateClock, 1000);
+      
+      updateVersion();
       
       refreshAll();
       updateInterval = setInterval(refreshAll, 2000);
