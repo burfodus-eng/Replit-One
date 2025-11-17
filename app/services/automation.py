@@ -9,6 +9,11 @@ class AutomationService:
         self.preset_manager = preset_manager
         self.last_executed_tasks = {}
         
+        self.feed_mode_active = False
+        self.feed_mode_start_time = None
+        self.feed_mode_duration_minutes = 10
+        self.preset_before_feed = None
+        
         self.completed_tasks = [
             {"name": "Morning Feeding", "time": "08:15 AM", "status": "completed"},
             {"name": "Peak Flow Cycle", "time": "10:30 AM", "status": "completed"},
@@ -78,8 +83,80 @@ class AutomationService:
             return True
         return False
     
+    def start_feed_mode(self) -> Dict:
+        if not self.preset_manager or not self.store:
+            return {"success": False, "message": "Preset manager not available"}
+        
+        if self.feed_mode_active:
+            return {"success": False, "message": "Feed mode already active"}
+        
+        feed_preset = self.store.get_preset_by_name("Feed Mode")
+        if not feed_preset:
+            return {"success": False, "message": "Feed Mode preset not found"}
+        
+        current_preset = self.preset_manager.get_active_preset()
+        self.preset_before_feed = current_preset.id if current_preset else None
+        
+        self.preset_manager.set_active_preset(feed_preset.id)
+        self.feed_mode_active = True
+        self.feed_mode_start_time = datetime.now()
+        
+        print(f"[Feed Mode] Started - previous preset: {self.preset_before_feed}")
+        return {"success": True, "message": "Feed mode activated"}
+    
+    def get_feed_mode_status(self) -> Dict:
+        if not self.feed_mode_active:
+            return {
+                "active": False,
+                "remaining_seconds": 0,
+                "duration_minutes": self.feed_mode_duration_minutes
+            }
+        
+        elapsed = (datetime.now() - self.feed_mode_start_time).total_seconds()
+        total_seconds = self.feed_mode_duration_minutes * 60
+        remaining = max(0, total_seconds - elapsed)
+        
+        return {
+            "active": True,
+            "remaining_seconds": int(remaining),
+            "duration_minutes": self.feed_mode_duration_minutes,
+            "start_time": self.feed_mode_start_time.isoformat()
+        }
+    
+    def stop_feed_mode(self, restore_preset: bool = True) -> Dict:
+        if not self.feed_mode_active:
+            return {"success": False, "message": "Feed mode not active"}
+        
+        self.feed_mode_active = False
+        
+        if restore_preset and self.preset_before_feed:
+            try:
+                self.preset_manager.set_active_preset(self.preset_before_feed)
+                print(f"[Feed Mode] Stopped - restored preset {self.preset_before_feed}")
+            except Exception as e:
+                print(f"[Feed Mode] Failed to restore preset: {e}")
+        
+        self.feed_mode_start_time = None
+        self.preset_before_feed = None
+        
+        return {"success": True, "message": "Feed mode stopped"}
+    
+    def check_feed_mode_timeout(self):
+        if not self.feed_mode_active or not self.feed_mode_start_time:
+            return
+        
+        elapsed = (datetime.now() - self.feed_mode_start_time).total_seconds()
+        duration_seconds = self.feed_mode_duration_minutes * 60
+        
+        if elapsed >= duration_seconds:
+            print(f"[Feed Mode] Timeout reached, auto-stopping")
+            self.stop_feed_mode(restore_preset=True)
+    
     def check_and_execute_tasks(self):
         if not self.store or not self.preset_manager:
+            return
+        
+        if self.feed_mode_active:
             return
         
         tasks = self.store.get_all_scheduled_tasks()

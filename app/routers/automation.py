@@ -120,3 +120,27 @@ async def delete_scheduled_task(task_id: int, request: Request):
     if not success:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"success": True}
+
+
+@router.post("/feed/start")
+async def start_feed_mode(request: Request):
+    automation = request.app.state.automation
+    result = automation.start_feed_mode()
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("message", "Failed to start feed mode"))
+    return result
+
+
+@router.get("/feed/status")
+async def get_feed_status(request: Request):
+    automation = request.app.state.automation
+    return automation.get_feed_mode_status()
+
+
+@router.post("/feed/stop")
+async def stop_feed_mode(request: Request):
+    automation = request.app.state.automation
+    result = automation.stop_feed_mode()
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("message", "Failed to stop feed mode"))
+    return result

@@ -117,5 +117,10 @@ class JobScheduler:
             def automation_task_check():
                 """1-minute interval task execution check"""
                 self.automation.check_and_execute_tasks()
+            
+            @self.sched.scheduled_job("interval", seconds=1)
+            def feed_mode_timeout_check():
+                """1-second interval feed mode timeout check"""
+                self.automation.check_feed_mode_timeout()
         
         self.sched.start()

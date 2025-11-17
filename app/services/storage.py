@@ -87,6 +87,11 @@ class Store:
         with Session(self.engine) as s:
             return s.get(WavemakerPreset, preset_id)
     
+    def get_preset_by_name(self, name: str) -> Optional[WavemakerPreset]:
+        with Session(self.engine) as s:
+            statement = select(WavemakerPreset).where(WavemakerPreset.name == name)
+            return s.exec(statement).first()
+    
     def create_preset(self, preset: WavemakerPreset) -> WavemakerPreset:
         with Session(self.engine) as s:
             s.add(preset)

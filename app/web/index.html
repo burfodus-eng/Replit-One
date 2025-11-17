@@ -921,6 +921,8 @@
           </select>
         </div>
         <button class="btn-primary" onclick="openPresetEditor()" style="margin-left: 15px;">Design Presets</button>
+        <button class="btn-primary" onclick="openScheduler()" style="margin-left: 15px;">Scheduler</button>
+        <button id="feedModeButton" class="btn-primary" onclick="startFeedMode()" style="margin-left: 15px; background: #48bb78;">Feed Mode</button>
       </div>
       
       <div class="wavemakers-grid" id="wavemakersGrid"></div>
@@ -1077,6 +1079,75 @@
           <div class="preset-action-bar">
             <button class="save-btn" onclick="savePreset()" style="flex: 1; margin: 0;">Save Preset</button>
             <button class="btn-delete" id="deletePresetBtn" onclick="deletePreset()" disabled>Delete Preset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="schedulerModal">
+    <div class="modal-content preset-editor">
+      <div class="preset-editor-sidebar">
+        <div class="preset-list-header">
+          <span>Scheduled Tasks</span>
+        </div>
+        <button class="btn-new-preset" onclick="createNewScheduledTask()">+ New Task</button>
+        <div style="height: 16px;"></div>
+        <div class="preset-list" id="scheduledTasksList"></div>
+      </div>
+      
+      <div class="preset-editor-main">
+        <div class="modal-header" style="margin-bottom: 24px;">
+          <div class="modal-title" id="schedulerTitle">Select a Task</div>
+          <button class="close-btn" onclick="closeScheduler()">✕</button>
+        </div>
+        
+        <div id="schedulerContent">
+          <div class="preset-settings-section">
+            <div class="preset-settings-title">Task Settings</div>
+            
+            <div class="preset-form-group">
+              <label class="preset-form-label">Task Name</label>
+              <input type="text" id="taskName" class="input-field" placeholder="Morning Wave Cycle">
+            </div>
+            
+            <div class="preset-form-group">
+              <label class="preset-form-label">Time (24-hour)</label>
+              <input type="time" id="taskTime" class="input-field">
+            </div>
+            
+            <div class="preset-form-group">
+              <label class="preset-form-label">Activate Preset</label>
+              <select id="taskPreset" class="mode-selector">
+                <option value="">Select preset...</option>
+              </select>
+            </div>
+            
+            <div class="preset-form-group">
+              <label class="preset-form-label">Days of Week</label>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                <label class="day-checkbox"><input type="checkbox" id="day-0" value="0"> Mon</label>
+                <label class="day-checkbox"><input type="checkbox" id="day-1" value="1"> Tue</label>
+                <label class="day-checkbox"><input type="checkbox" id="day-2" value="2"> Wed</label>
+                <label class="day-checkbox"><input type="checkbox" id="day-3" value="3"> Thu</label>
+                <label class="day-checkbox"><input type="checkbox" id="day-4" value="4"> Fri</label>
+                <label class="day-checkbox"><input type="checkbox" id="day-5" value="5"> Sat</label>
+                <label class="day-checkbox"><input type="checkbox" id="day-6" value="6"> Sun</label>
+              </div>
+              <p style="color: #718096; font-size: 12px; margin-top: 8px;">Leave all unchecked to run every day</p>
+            </div>
+            
+            <div class="preset-form-group">
+              <label class="preset-form-label">
+                <input type="checkbox" id="taskEnabled" checked style="margin-right: 8px;">
+                Enabled
+              </label>
+            </div>
+          </div>
+          
+          <div class="preset-action-bar">
+            <button class="save-btn" onclick="saveScheduledTask()" style="flex: 1; margin: 0;">Save Task</button>
+            <button class="btn-delete" id="deleteTaskBtn" onclick="deleteScheduledTask()" disabled>Delete Task</button>
           </div>
         </div>
       </div>
@@ -1598,6 +1669,58 @@
       }
     }
 
+    let feedModeActive = false;
+    
+    async function startFeedMode() {
+      try {
+        const res = await fetch('/api/feed/start', { method: 'POST' });
+        if (!res.ok) {
+          const error = await res.json();
+          alert(`Feed mode failed: ${error.detail || 'Unknown error'}`);
+          return;
+        }
+        const data = await res.json();
+        if (data.success) {
+          console.log('[Feed Mode] Started successfully');
+          await loadFeedModeStatus();
+        } else {
+          console.log('[Feed Mode] Failed to start:', data.message);
+          alert(`Failed to start feed mode: ${data.message}`);
+        }
+      } catch (err) {
+        console.error('[Feed Mode] Error starting:', err);
+        alert('Error starting feed mode');
+      }
+    }
+    
+    async function loadFeedModeStatus() {
+      try {
+        const res = await fetch('/api/feed/status');
+        const data = await res.json();
+        
+        const button = document.getElementById('feedModeButton');
+        
+        if (data.active) {
+          feedModeActive = true;
+          const minutes = Math.floor(data.remaining_seconds / 60);
+          const seconds = data.remaining_seconds % 60;
+          button.textContent = `Feeding (${minutes}:${seconds.toString().padStart(2, '0')})`;
+          button.style.background = '#f56565';
+          button.disabled = false;
+        } else {
+          if (feedModeActive) {
+            feedModeActive = false;
+            console.log('[Feed Mode] Completed');
+          }
+          button.textContent = 'Feed Mode';
+          button.style.background = '#48bb78';
+          button.disabled = false;
+        }
+      } catch (err) {
+        console.error('[Feed Mode] Failed to load status:', err);
+      }
+    }
+
     let allPresets = [];
     let selectedPresetId = null;
     let presetCurveData = {};
@@ -1965,6 +2088,166 @@
       drawAllCurves();
     }
 
+    let allScheduledTasks = [];
+    let selectedTaskId = null;
+    
+    async function openScheduler() {
+      document.getElementById('schedulerModal').classList.add('active');
+      await loadPresetsForScheduler();
+      await loadAllScheduledTasks();
+      createNewScheduledTask();
+    }
+    
+    function closeScheduler() {
+      document.getElementById('schedulerModal').classList.remove('active');
+      selectedTaskId = null;
+    }
+    
+    async function loadAllScheduledTasks() {
+      try {
+        const res = await fetch('/api/automation/scheduled');
+        allScheduledTasks = await res.json();
+        renderScheduledTasksList();
+      } catch (err) {
+        console.error('Failed to load scheduled tasks:', err);
+      }
+    }
+    
+    async function loadPresetsForScheduler() {
+      try {
+        const res = await fetch('/api/presets');
+        const presets = await res.json();
+        const selector = document.getElementById('taskPreset');
+        selector.innerHTML = '<option value="">Select preset...</option>' +
+          presets.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      } catch (err) {
+        console.error('Failed to load presets for scheduler:', err);
+      }
+    }
+    
+    function renderScheduledTasksList() {
+      const list = document.getElementById('scheduledTasksList');
+      list.innerHTML = allScheduledTasks.map(task => `
+        <div class="preset-list-item ${task.id === selectedTaskId ? 'active' : ''}" 
+             onclick="selectTaskForEditing(${task.id})">
+          <div class="preset-item-name">
+            ${task.name} ${!task.enabled ? '<span class="preset-item-badge">Disabled</span>' : ''}
+          </div>
+          <div class="preset-item-desc">${task.time}</div>
+        </div>
+      `).join('');
+    }
+    
+    function selectTaskForEditing(taskId) {
+      selectedTaskId = taskId;
+      const task = allScheduledTasks.find(t => t.id === taskId);
+      if (!task) return;
+      
+      document.getElementById('schedulerTitle').textContent = `Edit: ${task.name}`;
+      document.getElementById('taskName').value = task.name;
+      document.getElementById('taskTime').value = task.time;
+      document.getElementById('taskPreset').value = task.preset_id || '';
+      document.getElementById('taskEnabled').checked = task.enabled;
+      document.getElementById('deleteTaskBtn').disabled = false;
+      
+      for (let i = 0; i < 7; i++) {
+        const checkbox = document.getElementById(`day-${i}`);
+        if (task.days_of_week && Array.isArray(task.days_of_week)) {
+          checkbox.checked = task.days_of_week.includes(i);
+        } else {
+          checkbox.checked = false;
+        }
+      }
+      
+      renderScheduledTasksList();
+    }
+    
+    function createNewScheduledTask() {
+      selectedTaskId = null;
+      document.getElementById('schedulerTitle').textContent = 'New Scheduled Task';
+      document.getElementById('taskName').value = '';
+      document.getElementById('taskTime').value = '08:00';
+      document.getElementById('taskPreset').value = '';
+      document.getElementById('taskEnabled').checked = true;
+      document.getElementById('deleteTaskBtn').disabled = true;
+      
+      for (let i = 0; i < 7; i++) {
+        document.getElementById(`day-${i}`).checked = false;
+      }
+      
+      renderScheduledTasksList();
+    }
+    
+    async function saveScheduledTask() {
+      const name = document.getElementById('taskName').value.trim();
+      const time = document.getElementById('taskTime').value;
+      const presetId = parseInt(document.getElementById('taskPreset').value);
+      const enabled = document.getElementById('taskEnabled').checked;
+      
+      if (!name || !time || !presetId) {
+        alert('Please fill in all required fields');
+        return;
+      }
+      
+      const daysOfWeek = [];
+      for (let i = 0; i < 7; i++) {
+        if (document.getElementById(`day-${i}`).checked) {
+          daysOfWeek.push(i);
+        }
+      }
+      
+      const taskData = {
+        name: name,
+        task_type: 'preset_activation',
+        time: time,
+        enabled: enabled,
+        preset_id: presetId,
+        days_of_week: daysOfWeek.length > 0 ? daysOfWeek : null
+      };
+      
+      try {
+        if (selectedTaskId) {
+          await fetch(`/api/automation/scheduled/${selectedTaskId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(taskData)
+          });
+        } else {
+          await fetch('/api/automation/scheduled', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(taskData)
+          });
+        }
+        
+        await loadAllScheduledTasks();
+        await loadTasks();
+      } catch (err) {
+        console.error('Failed to save scheduled task:', err);
+        alert('Failed to save task');
+      }
+    }
+    
+    async function deleteScheduledTask() {
+      if (!selectedTaskId) return;
+      
+      if (!confirm('Delete this scheduled task?')) return;
+      
+      try {
+        await fetch(`/api/automation/scheduled/${selectedTaskId}`, {
+          method: 'DELETE'
+        });
+        
+        selectedTaskId = null;
+        await loadAllScheduledTasks();
+        await loadTasks();
+        createNewScheduledTask();
+      } catch (err) {
+        console.error('Failed to delete scheduled task:', err);
+        alert('Failed to delete task');
+      }
+    }
+
     function showSettings(arrayId) {
       const array = arraysData.find(a => a.id === arrayId);
       if (!array) return;
@@ -2276,7 +2559,8 @@
         loadSystemLoad(),
         loadTasks(),
         loadEvents(),
-        loadSystemHealth()
+        loadSystemHealth(),
+        loadFeedModeStatus()
       ]);
     }
 
