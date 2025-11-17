@@ -549,6 +549,62 @@
       }
     }
 
+    .wavemakers-section {
+      margin-top: 20px;
+    }
+
+    .section-header {
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+
+    .wavemakers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 12px;
+    }
+
+    .wavemaker-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border: 2px solid transparent;
+      transition: box-shadow 0.2s;
+    }
+
+    .wavemaker-card:hover {
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+      border-color: rgba(102, 126, 234, 0.3);
+    }
+
+    .mode-selector {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      min-height: 48px;
+      background: white;
+      color: #2d3748;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .mode-selector:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .mode-selector:hover {
+      border-color: #667eea;
+    }
+
     @media (max-width: 1200px) {
       .main-layout {
         grid-template-columns: 1fr;
@@ -599,6 +655,11 @@
         </div>
       </div>
     </div>
+
+    <div class="wavemakers-section">
+      <div class="section-header">🌊 Wavemakers</div>
+      <div class="wavemakers-grid" id="wavemakersGrid"></div>
+    </div>
   </div>
 
   <div class="modal" id="settingsModal">
@@ -638,11 +699,15 @@
 
   <script>
     let arraysData = [];
+    let wavemakersData = [];
     let currentSettingsArrayId = null;
     let updateInterval = null;
     let sliderDebounce = new Map();
     let localDutyState = new Map();
     let localToggleState = new Map();
+    let wavemakerDebounce = new Map();
+    let localWavemakerPower = new Map();
+    let localWavemakerMode = new Map();
 
     function updateClock() {
       const now = new Date();
@@ -894,6 +959,138 @@
       } catch (err) {
         console.error('Failed to load health:', err);
       }
+    }
+
+    async function loadWavemakers() {
+      try {
+        const res = await fetch('/api/wavemakers');
+        const data = await res.json();
+        wavemakersData = data || [];
+        renderWavemakers();
+      } catch (err) {
+        console.error('Failed to load wavemakers:', err);
+      }
+    }
+
+    function renderWavemakers() {
+      const grid = document.getElementById('wavemakersGrid');
+      
+      if (!wavemakersData || wavemakersData.length === 0) {
+        grid.innerHTML = '<p style="color: white; padding: 20px;">No wavemakers configured</p>';
+        return;
+      }
+      
+      grid.innerHTML = wavemakersData.map(wm => {
+        const power = localWavemakerPower.has(wm.id) ? localWavemakerPower.get(wm.id) : Math.round(wm.target_power_pct);
+        const mode = localWavemakerMode.has(wm.id) ? localWavemakerMode.get(wm.id) : wm.mode;
+        
+        return `
+        <div class="wavemaker-card">
+          <div class="card-header">
+            <div>
+              <div class="array-title">${wm.name}</div>
+              <div class="array-description">Channel ${wm.id}</div>
+            </div>
+          </div>
+
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Mode</span>
+            </div>
+            <select 
+              class="mode-selector" 
+              id="mode-${wm.id}"
+              onchange="updateWavemakerMode('${wm.id}', this.value)"
+            >
+              <option value="off" ${mode === 'off' ? 'selected' : ''}>Off</option>
+              <option value="constant" ${mode === 'constant' ? 'selected' : ''}>Constant</option>
+              <option value="pulse" ${mode === 'pulse' ? 'selected' : ''}>Pulse</option>
+              <option value="gyre_left" ${mode === 'gyre_left' ? 'selected' : ''}>Gyre Left</option>
+              <option value="gyre_right" ${mode === 'gyre_right' ? 'selected' : ''}>Gyre Right</option>
+              <option value="random_reef" ${mode === 'random_reef' ? 'selected' : ''}>Random Reef</option>
+            </select>
+          </div>
+
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>Target Power</span>
+              <span id="power-${wm.id}">${power}%</span>
+            </div>
+            <input
+              type="range"
+              class="slider"
+              min="0"
+              max="100"
+              value="${power}"
+              id="slider-${wm.id}"
+              onchange="updateWavemakerPower('${wm.id}', this.value)"
+            >
+          </div>
+
+          <div class="telemetry-grid">
+            <div class="telemetry-item">
+              <span class="telemetry-label">Current Power</span>
+              <span class="telemetry-value">${wm.current_power_w.toFixed(1)} W</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Voltage</span>
+              <span class="telemetry-value">${wm.voltage_v.toFixed(1)} V</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Current</span>
+              <span class="telemetry-value">${wm.current_a.toFixed(2)} A</span>
+            </div>
+          </div>
+        </div>
+        `;
+      }).join('');
+    }
+
+    async function updateWavemakerMode(wavemakerId, mode) {
+      localWavemakerMode.set(wavemakerId, mode);
+      
+      try {
+        await fetch(`/api/wavemakers/${wavemakerId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: mode })
+        });
+        
+        setTimeout(() => {
+          localWavemakerMode.delete(wavemakerId);
+        }, 5000);
+      } catch (err) {
+        console.error('Failed to update wavemaker mode:', err);
+        localWavemakerMode.delete(wavemakerId);
+      }
+    }
+
+    async function updateWavemakerPower(wavemakerId, value) {
+      const power = parseInt(value);
+      localWavemakerPower.set(wavemakerId, power);
+      document.getElementById(`power-${wavemakerId}`).textContent = `${value}%`;
+      
+      if (wavemakerDebounce.has(wavemakerId)) {
+        clearTimeout(wavemakerDebounce.get(wavemakerId));
+      }
+      
+      wavemakerDebounce.set(wavemakerId, setTimeout(async () => {
+        try {
+          await fetch(`/api/wavemakers/${wavemakerId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target_power_pct: power })
+          });
+          
+          setTimeout(() => {
+            localWavemakerPower.delete(wavemakerId);
+          }, 5000);
+        } catch (err) {
+          console.error('Failed to update wavemaker power:', err);
+          localWavemakerPower.delete(wavemakerId);
+        }
+        wavemakerDebounce.delete(wavemakerId);
+      }, 300));
     }
 
     function showSettings(arrayId) {
@@ -1202,6 +1399,7 @@
     async function refreshAll() {
       await Promise.all([
         loadArrays(),
+        loadWavemakers(),
         loadSystemLoad(),
         loadTasks(),
         loadEvents(),

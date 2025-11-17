@@ -97,3 +97,30 @@ class HistoryPoint(BaseModel):
     v: float
     i: float
     p: float
+
+
+WavemakerMode = Literal["off", "constant", "pulse", "gyre_left", "gyre_right", "random_reef"]
+
+
+class WavemakerChannel(BaseModel):
+    id: int
+    name: str
+    mode: WavemakerMode
+    target_power_pct: int
+    pulse_duty_ratio: float
+    current_power_w: float
+    voltage_v: float
+    current_a: float
+
+
+class WavemakerControlRequest(BaseModel):
+    mode: Optional[WavemakerMode] = None
+    target_power_pct: Optional[int] = None
+    pulse_duty_ratio: Optional[float] = None
+
+
+class WavemakerHistoryPoint(BaseModel):
+    t: datetime
+    power_w: float
+    duty_pct: float
+    pulse_duty_ratio: float

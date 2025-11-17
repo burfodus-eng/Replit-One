@@ -12,7 +12,8 @@ from .services.automation import AutomationService
 from .services.system_health import SystemHealthService
 from .services.events import EventsService
 from .services.power_allocator import PowerAllocator
-from .routers import telemetry, control, config_api, automation, arrays, history
+from .services.wavemaker_manager import WavemakerManager
+from .routers import telemetry, control, config_api, automation, arrays, history, wavemakers
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -32,6 +33,7 @@ app.include_router(config_api.router, prefix='/api')
 app.include_router(automation.router, prefix='/api')
 app.include_router(arrays.router, prefix='/api')
 app.include_router(history.router)
+app.include_router(wavemakers.router, prefix='/api')
 
 
 @app.on_event('startup')
@@ -64,6 +66,9 @@ async def startup():
         logger.info("Initializing power allocator...")
         app.state.power_allocator = PowerAllocator(CONFIG, app.state.events)
         
+        logger.info("Initializing wavemaker manager...")
+        app.state.wavemaker_manager = WavemakerManager()
+        
         logger.info(f"Initializing database at {DB_URL}...")
         engine = make_db(DB_URL)
         app.state.store = Store(engine)
@@ -76,7 +81,8 @@ async def startup():
             app.state.stage_manager,
             persist_cb=app.state.store.persist,
             interval_s=CONFIG['telemetry']['sample_interval_ms']/1000,
-            power_allocator=app.state.power_allocator
+            power_allocator=app.state.power_allocator,
+            wavemaker_manager=app.state.wavemaker_manager
         ).start(app)
         
         logger.info("Reef Controller startup complete!")

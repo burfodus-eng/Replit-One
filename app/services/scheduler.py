@@ -2,11 +2,12 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 
 class JobScheduler:
-    def __init__(self, mgr, persist_cb=None, interval_s=1.0, power_allocator=None):
+    def __init__(self, mgr, persist_cb=None, interval_s=1.0, power_allocator=None, wavemaker_manager=None):
         self.mgr = mgr
         self.persist_cb = persist_cb
         self.interval_s = interval_s
         self.power_allocator = power_allocator
+        self.wavemaker_manager = wavemaker_manager
         self.sched = AsyncIOScheduler()
 
 
@@ -96,4 +97,18 @@ class JobScheduler:
             if self.persist_cb:
                 self.persist_cb(snap)
             app.state.latest = snap
+        
+        if self.wavemaker_manager:
+            import time
+            
+            @self.sched.scheduled_job("interval", seconds=0.05)
+            def wavemaker_control_loop():
+                """20Hz wavemaker PWM control loop"""
+                self.wavemaker_manager.update_all(time.time())
+            
+            @self.sched.scheduled_job("interval", seconds=1.0)
+            def wavemaker_telemetry_loop():
+                """1Hz wavemaker telemetry sampling"""
+                self.wavemaker_manager.sample_all_power()
+        
         self.sched.start()
