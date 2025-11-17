@@ -1,8 +1,9 @@
 # Reef Controller
 
-**Current Version: v1.5.0**
+**Current Version: v1.5.1**
 
 ## Version History
+- **v1.5.1** (Nov 17, 2025): Fixed calendar grid layout using CSS Grid (proper 8×25 grid with time labels + 7 day columns) and added comprehensive conflict detection system - client-side validation shows immediate toast feedback, server-side authoritative checks return HTTP 409 on scheduling conflicts, prevents multiple presets at same time with clear error messages describing conflicts
 - **v1.5.0** (Nov 17, 2025): Created dedicated full-screen Schedule Calendar modal (95vw×90vh) accessible via new "Schedule Calendar" button, featuring weekly grid display (24 hours x 7 days) with visual task placement, clickable cells to create tasks with pre-filled time/day, and clickable task badges to edit existing tasks - calendar opens/closes independently while scheduler modal remains simple list-based editor
 - **v1.4.0** (Nov 17, 2025): Added calendar view to scheduler modal with weekly grid display (24 hours x 7 days), visual task placement at scheduled times, clickable cells to create new tasks with pre-filled time/day, and clickable task badges to edit existing tasks using proper selectTaskForEditing() integration
 - **v1.3.1** (Nov 17, 2025): UX polish - implemented toast notification system to replace iframe-blocking alert() calls with non-blocking success/error/info toasts, updated Feed Mode button to toggle functionality (click to start, click again to cancel), removed button hover bounce effects for cleaner interaction
