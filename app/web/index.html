@@ -2439,69 +2439,64 @@
       }
     }
 
-    function switchSchedulerView(view) {
-      const listBtn = document.getElementById('viewListBtn');
-      const calendarBtn = document.getElementById('viewCalendarBtn');
-      const listContainer = document.getElementById('listViewContainer');
-      const calendarContainer = document.getElementById('calendarViewContainer');
-      
-      if (view === 'list') {
-        listBtn.classList.add('active');
-        calendarBtn.classList.remove('active');
-        listContainer.style.display = 'block';
-        calendarContainer.style.display = 'none';
-      } else {
-        listBtn.classList.remove('active');
-        calendarBtn.classList.add('active');
-        listContainer.style.display = 'none';
-        calendarContainer.style.display = 'block';
-        renderCalendar();
-      }
+    async function openCalendar() {
+      document.getElementById('calendarModal').classList.add('active');
+      await loadPresetsForScheduler();
+      await loadAllScheduledTasks();
+      renderCalendarFull();
     }
-
-    function renderCalendar() {
-      const container = document.getElementById('calendarWeek');
+    
+    function closeCalendar() {
+      document.getElementById('calendarModal').classList.remove('active');
+    }
+    
+    function renderCalendarFull() {
+      const container = document.getElementById('calendarWeekFull');
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const hours = Array.from({length: 24}, (_, i) => i);
       
       let html = '<div class="calendar-grid">';
       
-      html += '<div></div>';
-      days.forEach((day, index) => {
-        html += `<div class="calendar-header">${day}</div>`;
+      html += '<div class="calendar-header">';
+      html += '<div class="calendar-hour-label"></div>';
+      days.forEach(day => {
+        html += `<div class="calendar-day-header">${day}</div>`;
       });
+      html += '</div>';
       
       hours.forEach(hour => {
-        const timeLabel = `${hour.toString().padStart(2, '0')}:00`;
-        html += `<div class="calendar-time-label">${timeLabel}</div>`;
+        html += `<div class="calendar-row">`;
+        html += `<div class="calendar-hour-label">${hour.toString().padStart(2, '0')}:00</div>`;
         
         for (let day = 0; day < 7; day++) {
           const tasksAtThisTime = allScheduledTasks.filter(task => {
             const taskHour = parseInt(task.time.split(':')[0]);
             const taskMinute = parseInt(task.time.split(':')[1]);
-            const matchesHour = taskHour === hour;
+            const matchesHour = taskHour === hour && taskMinute === 0;
             const matchesDay = !task.days_of_week || task.days_of_week.length === 0 || task.days_of_week.includes(day);
             return matchesHour && matchesDay;
           });
           
-          html += `<div class="calendar-cell" onclick="handleCalendarCellClick(${hour}, ${day})">`;
+          html += `<div class="calendar-cell" onclick="handleCalendarCellClickFull(${hour}, ${day})">`;
           tasksAtThisTime.forEach(task => {
             const disabledClass = task.enabled ? '' : ' disabled';
             const presetName = allPresets.find(p => p.id === task.preset_id)?.name || 'Unknown';
-            html += `<div class="calendar-task${disabledClass}" onclick="event.stopPropagation(); handleTaskClick(${task.id})" title="${task.name} - ${presetName}">
+            html += `<div class="calendar-task${disabledClass}" onclick="event.stopPropagation(); handleTaskClickFromCalendar(${task.id})" title="${task.name} - ${presetName}">
               ${task.time} ${task.name}
             </div>`;
           });
           html += '</div>';
         }
+        html += '</div>';
       });
       
       html += '</div>';
       container.innerHTML = html;
     }
 
-    function handleCalendarCellClick(hour, dayOfWeek) {
-      createNewScheduledTask();
+    function handleCalendarCellClickFull(hour, dayOfWeek) {
+      closeCalendar();
+      openScheduler();
       
       const timeString = `${hour.toString().padStart(2, '0')}:00`;
       document.getElementById('taskTime').value = timeString;
@@ -2510,13 +2505,15 @@
       if (checkbox) {
         checkbox.checked = true;
       }
-      
-      switchSchedulerView('list');
     }
 
-    function handleTaskClick(taskId) {
-      selectTaskForEditing(taskId);
-      switchSchedulerView('list');
+    function handleTaskClickFromCalendar(taskId) {
+      closeCalendar();
+      openScheduler();
+      
+      setTimeout(() => {
+        selectTaskForEditing(taskId);
+      }, 100);
     }
 
     function showSettings(arrayId) {
