@@ -882,43 +882,48 @@
     .calendar-grid {
       display: grid;
       grid-template-columns: 60px repeat(7, 1fr);
-      gap: 4px;
+      gap: 1px;
       min-width: 600px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1px;
+      border-radius: 8px;
     }
 
     .calendar-day-header {
       text-align: center;
       font-weight: 600;
       font-size: 13px;
-      color: rgba(255, 255, 255, 0.9);
+      color: #2d3748;
       padding: 10px 4px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.15);
     }
 
     .calendar-hour-label {
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.7);
+      color: #2d3748;
       padding: 8px 4px;
       text-align: right;
-      font-weight: 500;
+      font-weight: 600;
       display: flex;
       align-items: center;
       justify-content: flex-end;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(0, 0, 0, 0.15);
     }
 
     .calendar-cell {
       min-height: 40px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.85);
       cursor: pointer;
       position: relative;
       transition: background 0.2s;
       padding: 2px;
+      border: 1px solid rgba(0, 0, 0, 0.15);
     }
 
     .calendar-cell:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(102, 126, 234, 0.2);
     }
 
     .calendar-task {
@@ -2371,19 +2376,23 @@
       renderScheduledTasksList();
     }
     
-    function checkScheduleConflict(time, daysOfWeek, excludeTaskId = null) {
+    function checkScheduleConflict(time, daysOfWeek, taskType, excludeTaskId = null) {
       const conflicts = allScheduledTasks.filter(task => {
         if (task.id === excludeTaskId) return false;
         if (!task.enabled) return false;
         if (task.time !== time) return false;
         
-        const taskDays = task.days_of_week || [];
-        const newDays = daysOfWeek || [];
+        if (taskType === 'preset_activation' && task.task_type === 'preset_activation') {
+          const taskDays = task.days_of_week || [];
+          const newDays = daysOfWeek || [];
+          
+          if (taskDays.length === 0 && newDays.length === 0) return true;
+          if (taskDays.length === 0 || newDays.length === 0) return true;
+          
+          return taskDays.some(day => newDays.includes(day));
+        }
         
-        if (taskDays.length === 0 && newDays.length === 0) return true;
-        if (taskDays.length === 0 || newDays.length === 0) return true;
-        
-        return taskDays.some(day => newDays.includes(day));
+        return false;
       });
       
       return conflicts;
@@ -2408,7 +2417,7 @@
       }
       
       if (enabled) {
-        const conflicts = checkScheduleConflict(time, daysOfWeek.length > 0 ? daysOfWeek : null, selectedTaskId);
+        const conflicts = checkScheduleConflict(time, daysOfWeek.length > 0 ? daysOfWeek : null, 'preset_activation', selectedTaskId);
         if (conflicts.length > 0) {
           const conflictNames = conflicts.map(c => c.name).join(', ');
           const dayText = daysOfWeek.length > 0 ? 'on selected days' : 'every day';

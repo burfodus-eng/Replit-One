@@ -65,8 +65,10 @@ async def get_all_scheduled_tasks(request: Request):
     ]
 
 
-def check_schedule_conflict(store, time: str, days_of_week, exclude_task_id=None):
-    """Check if a scheduled task conflicts with existing tasks at the same time"""
+def check_schedule_conflict(store, time: str, days_of_week, task_type: str, exclude_task_id=None):
+    """Check if a scheduled task conflicts with existing tasks at the same time.
+    Only checks for conflicts between tasks of the same type (e.g., preset_activation vs preset_activation).
+    This allows different task types (presets, feeding, pumps) to be scheduled at the same time."""
     all_tasks = store.get_all_scheduled_tasks()
     
     for task in all_tasks:
@@ -77,16 +79,17 @@ def check_schedule_conflict(store, time: str, days_of_week, exclude_task_id=None
         if task.time != time:
             continue
         
-        task_days = json.loads(task.days_of_week) if task.days_of_week else []
-        new_days = days_of_week or []
-        
-        if len(task_days) == 0 and len(new_days) == 0:
-            return task
-        if len(task_days) == 0 or len(new_days) == 0:
-            return task
-        
-        if any(day in new_days for day in task_days):
-            return task
+        if task_type == 'preset_activation' and task.task_type == 'preset_activation':
+            task_days = json.loads(task.days_of_week) if task.days_of_week else []
+            new_days = days_of_week or []
+            
+            if len(task_days) == 0 and len(new_days) == 0:
+                return task
+            if len(task_days) == 0 or len(new_days) == 0:
+                return task
+            
+            if any(day in new_days for day in task_days):
+                return task
     
     return None
 
@@ -96,7 +99,7 @@ async def create_scheduled_task(task_req: ScheduledTaskRequest, request: Request
     store = request.app.state.store
     
     if task_req.enabled:
-        conflict = check_schedule_conflict(store, task_req.time, task_req.days_of_week)
+        conflict = check_schedule_conflict(store, task_req.time, task_req.days_of_week, task_req.task_type)
         if conflict:
             day_text = "on selected days" if task_req.days_of_week else "every day"
             raise HTTPException(
@@ -129,7 +132,7 @@ async def update_scheduled_task(task_id: int, task_req: ScheduledTaskRequest, re
     store = request.app.state.store
     
     if task_req.enabled:
-        conflict = check_schedule_conflict(store, task_req.time, task_req.days_of_week, exclude_task_id=task_id)
+        conflict = check_schedule_conflict(store, task_req.time, task_req.days_of_week, task_req.task_type, exclude_task_id=task_id)
         if conflict:
             day_text = "on selected days" if task_req.days_of_week else "every day"
             raise HTTPException(
