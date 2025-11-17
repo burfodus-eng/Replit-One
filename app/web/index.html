@@ -1513,15 +1513,23 @@
     let presetsData = [];
     let activePresetId = null;
     let activePreset = null;
+    let lastPresetListHash = null;
 
     async function loadPresets() {
       try {
         const res = await fetch('/api/presets');
-        presetsData = await res.json();
+        const newPresetsData = await res.json();
         
-        const selector = document.getElementById('presetSelector');
-        selector.innerHTML = '<option value="">Manual Control</option>' +
-          presetsData.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        const newHash = newPresetsData.map(p => `${p.id}:${p.name}:${p.description}`).join('|');
+        
+        if (newHash !== lastPresetListHash) {
+          presetsData = newPresetsData;
+          lastPresetListHash = newHash;
+          
+          const selector = document.getElementById('presetSelector');
+          selector.innerHTML = '<option value="">Manual Control</option>' +
+            presetsData.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        }
         
         await loadActivePreset();
       } catch (err) {
@@ -1546,7 +1554,11 @@
           } else {
             selector.value = '';
           }
+        } else if (data.active_preset) {
+          activePreset = data.active_preset;
         }
+        
+        drawFlowPatterns();
       } catch (err) {
         console.error('Failed to load active preset:', err);
       }
