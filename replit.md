@@ -1,8 +1,9 @@
 # Reef Controller
 
-**Current Version: v1.2.1**
+**Current Version: v1.2.2**
 
 ## Version History
+- **v1.2.2** (Nov 17, 2025): Enhanced preset selector stability with comprehensive hash-based change detection (ID, name, description) and fixed flow pattern canvas updates to refresh on every polling cycle
 - **v1.2.1** (Nov 17, 2025): UI polish - fixed Canvas keyframe editor coordinate mapping for accurate mouse interaction, removed individual wavemaker controls and added visual flow pattern displays, fixed preset selector jumping on refresh
 - **v1.2.0** (Nov 17, 2025): Added graphical preset editor with Canvas-based curve design, interactive keyframe editing, and automated scheduler for time-based preset switching
 - **v1.1.0** (Nov 17, 2025): Added preset-based wavemaker control system with 6 built-in flow patterns, interpolated power curves, REST API, and frontend preset selector
