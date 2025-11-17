@@ -140,3 +140,22 @@ class WavemakerPresetRequest(BaseModel):
     description: Optional[str] = ""
     cycle_duration_sec: Optional[int] = 60
     flow_curves: Optional[dict] = {}
+
+
+class ScheduledTask(BaseModel):
+    id: Optional[int] = None
+    name: str
+    task_type: Literal["preset_activation", "feeding", "maintenance"]
+    time: str
+    enabled: bool = True
+    preset_id: Optional[int] = None
+    days_of_week: Optional[List[int]] = None
+
+
+class ScheduledTaskRequest(BaseModel):
+    name: str
+    task_type: Literal["preset_activation", "feeding", "maintenance"]
+    time: str
+    enabled: Optional[bool] = True
+    preset_id: Optional[int] = None
+    days_of_week: Optional[List[int]] = None

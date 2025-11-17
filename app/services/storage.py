@@ -24,6 +24,16 @@ class WavemakerPreset(SQLModel, table=True):
     flow_curves: dict = Field(default={}, sa_column=Column(JSON))
 
 
+class ScheduledTaskRow(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    task_type: str
+    time: str
+    enabled: bool = True
+    preset_id: Optional[int] = None
+    days_of_week: Optional[str] = None
+
+
 def make_db(db_url: str):
     engine = create_engine(db_url)
     SQLModel.metadata.create_all(engine)
@@ -105,5 +115,44 @@ class Store:
             if not preset or preset.is_built_in:
                 return False
             s.delete(preset)
+            s.commit()
+            return True
+    
+    def get_all_scheduled_tasks(self) -> List[ScheduledTaskRow]:
+        with Session(self.engine) as s:
+            statement = select(ScheduledTaskRow).order_by(ScheduledTaskRow.time)
+            results = s.exec(statement).all()
+            return list(results)
+    
+    def get_scheduled_task(self, task_id: int) -> Optional[ScheduledTaskRow]:
+        with Session(self.engine) as s:
+            return s.get(ScheduledTaskRow, task_id)
+    
+    def create_scheduled_task(self, task: ScheduledTaskRow) -> ScheduledTaskRow:
+        with Session(self.engine) as s:
+            s.add(task)
+            s.commit()
+            s.refresh(task)
+            return task
+    
+    def update_scheduled_task(self, task_id: int, **kwargs) -> Optional[ScheduledTaskRow]:
+        with Session(self.engine) as s:
+            task = s.get(ScheduledTaskRow, task_id)
+            if not task:
+                return None
+            for key, value in kwargs.items():
+                if hasattr(task, key):
+                    setattr(task, key, value)
+            s.add(task)
+            s.commit()
+            s.refresh(task)
+            return task
+    
+    def delete_scheduled_task(self, task_id: int) -> bool:
+        with Session(self.engine) as s:
+            task = s.get(ScheduledTaskRow, task_id)
+            if not task:
+                return False
+            s.delete(task)
             s.commit()
             return True

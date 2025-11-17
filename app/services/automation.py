@@ -1,19 +1,18 @@
 from datetime import datetime, timedelta
-from typing import List, Dict
+from typing import List, Dict, Optional
+import json
 
 
 class AutomationService:
-    def __init__(self):
+    def __init__(self, store=None, preset_manager=None):
+        self.store = store
+        self.preset_manager = preset_manager
+        self.last_executed_tasks = {}
+        
         self.completed_tasks = [
             {"name": "Morning Feeding", "time": "08:15 AM", "status": "completed"},
             {"name": "Peak Flow Cycle", "time": "10:30 AM", "status": "completed"},
             {"name": "Water Quality Check", "time": "12:00 PM", "status": "completed"},
-        ]
-        
-        self.upcoming_tasks = [
-            {"name": "Evening Feeding", "time": "06:00 PM", "eta_minutes": 45},
-            {"name": "Night Mode Transition", "time": "08:30 PM", "eta_minutes": 195},
-            {"name": "Coral Acclimation", "time": "09:00 PM", "eta_minutes": 225},
         ]
         
         self.wave_modes = {
@@ -30,7 +29,42 @@ class AutomationService:
         return self.completed_tasks
     
     def get_upcoming_tasks(self) -> List[Dict]:
-        return self.upcoming_tasks
+        if not self.store:
+            return [
+                {"name": "Evening Feeding", "time": "06:00 PM", "eta_minutes": 45},
+                {"name": "Night Mode Transition", "time": "08:30 PM", "eta_minutes": 195},
+            ]
+        
+        tasks = self.store.get_all_scheduled_tasks()
+        now = datetime.now()
+        upcoming = []
+        
+        for task in tasks:
+            if not task.enabled:
+                continue
+            
+            try:
+                task_hour, task_min = task.time.split(':')
+                task_dt = now.replace(hour=int(task_hour), minute=int(task_min), second=0, microsecond=0)
+                
+                if task_dt < now:
+                    task_dt += timedelta(days=1)
+                
+                eta_minutes = int((task_dt - now).total_seconds() / 60)
+                
+                upcoming.append({
+                    "id": task.id,
+                    "name": task.name,
+                    "time": task.time,
+                    "eta_minutes": eta_minutes,
+                    "type": task.task_type,
+                    "preset_id": task.preset_id
+                })
+            except:
+                continue
+        
+        upcoming.sort(key=lambda x: x["eta_minutes"])
+        return upcoming[:5]
     
     def get_wave_modes(self) -> List[str]:
         return list(self.wave_modes.keys())
@@ -43,3 +77,42 @@ class AutomationService:
             self.current_wave_mode = mode
             return True
         return False
+    
+    def check_and_execute_tasks(self):
+        if not self.store or not self.preset_manager:
+            return
+        
+        tasks = self.store.get_all_scheduled_tasks()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M")
+        today = now.weekday()
+        
+        for task in tasks:
+            if not task.enabled:
+                continue
+            
+            if task.days_of_week:
+                try:
+                    days = json.loads(task.days_of_week) if isinstance(task.days_of_week, str) else task.days_of_week
+                    if today not in days:
+                        continue
+                except:
+                    pass
+            
+            task_key = f"{task.id}_{task.time}"
+            last_exec = self.last_executed_tasks.get(task_key)
+            
+            if last_exec and (now - last_exec).total_seconds() < 60:
+                continue
+            
+            if task.time == current_time:
+                self._execute_task(task)
+                self.last_executed_tasks[task_key] = now
+    
+    def _execute_task(self, task):
+        if task.task_type == "preset_activation" and task.preset_id:
+            try:
+                self.preset_manager.set_active_preset(task.preset_id)
+                print(f"[Automation] Activated preset {task.preset_id} for task '{task.name}'")
+            except Exception as e:
+                print(f"[Automation] Failed to execute task {task.name}: {e}")

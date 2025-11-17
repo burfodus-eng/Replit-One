@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
+from app.models import ScheduledTask, ScheduledTaskRequest
+from app.services.storage import ScheduledTaskRow
+import json
 
 
 router = APIRouter()
@@ -42,3 +45,78 @@ async def get_system_health(request: Request):
     health = request.app.state.health
     latest_data = [r.model_dump() for r in request.app.state.latest]
     return health.check_health(latest_data)
+
+
+@router.get("/automation/scheduled")
+async def get_all_scheduled_tasks(request: Request):
+    store = request.app.state.store
+    tasks = store.get_all_scheduled_tasks()
+    return [
+        ScheduledTask(
+            id=t.id,
+            name=t.name,
+            task_type=t.task_type,
+            time=t.time,
+            enabled=t.enabled,
+            preset_id=t.preset_id,
+            days_of_week=json.loads(t.days_of_week) if t.days_of_week else None
+        )
+        for t in tasks
+    ]
+
+
+@router.post("/automation/scheduled")
+async def create_scheduled_task(task_req: ScheduledTaskRequest, request: Request):
+    store = request.app.state.store
+    task_row = ScheduledTaskRow(
+        name=task_req.name,
+        task_type=task_req.task_type,
+        time=task_req.time,
+        enabled=task_req.enabled,
+        preset_id=task_req.preset_id,
+        days_of_week=json.dumps(task_req.days_of_week) if task_req.days_of_week else None
+    )
+    created = store.create_scheduled_task(task_row)
+    return ScheduledTask(
+        id=created.id,
+        name=created.name,
+        task_type=created.task_type,
+        time=created.time,
+        enabled=created.enabled,
+        preset_id=created.preset_id,
+        days_of_week=json.loads(created.days_of_week) if created.days_of_week else None
+    )
+
+
+@router.put("/automation/scheduled/{task_id}")
+async def update_scheduled_task(task_id: int, task_req: ScheduledTaskRequest, request: Request):
+    store = request.app.state.store
+    update_data = {
+        "name": task_req.name,
+        "task_type": task_req.task_type,
+        "time": task_req.time,
+        "enabled": task_req.enabled,
+        "preset_id": task_req.preset_id,
+        "days_of_week": json.dumps(task_req.days_of_week) if task_req.days_of_week else None
+    }
+    updated = store.update_scheduled_task(task_id, **update_data)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return ScheduledTask(
+        id=updated.id,
+        name=updated.name,
+        task_type=updated.task_type,
+        time=updated.time,
+        enabled=updated.enabled,
+        preset_id=updated.preset_id,
+        days_of_week=json.loads(updated.days_of_week) if updated.days_of_week else None
+    )
+
+
+@router.delete("/automation/scheduled/{task_id}")
+async def delete_scheduled_task(task_id: int, request: Request):
+    store = request.app.state.store
+    success = store.delete_scheduled_task(task_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"success": True}

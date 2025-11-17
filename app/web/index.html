@@ -419,6 +419,16 @@
       width: 90vw;
       max-width: 90vw;
     }
+    
+    .modal-content.preset-editor {
+      width: 95vw;
+      max-width: 95vw;
+      max-height: 95vh;
+      padding: 0;
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+    }
 
     .modal-header {
       display: flex;
@@ -549,6 +559,188 @@
     .chart-container canvas {
       width: 100%;
       display: block;
+    }
+    
+    .preset-editor-sidebar {
+      width: 280px;
+      background: #f7fafc;
+      padding: 24px;
+      overflow-y: auto;
+      border-right: 1px solid #e2e8f0;
+    }
+    
+    .preset-editor-main {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      background: white;
+    }
+    
+    .preset-list-header {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .preset-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .preset-list-item {
+      padding: 12px;
+      background: white;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .preset-list-item:hover {
+      border-color: #667eea;
+    }
+    
+    .preset-list-item.active {
+      border-color: #667eea;
+      background: #eef2ff;
+    }
+    
+    .preset-list-item.built-in {
+      opacity: 0.8;
+    }
+    
+    .preset-item-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 4px;
+    }
+    
+    .preset-item-desc {
+      font-size: 12px;
+      color: #718096;
+    }
+    
+    .preset-item-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 6px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      color: #4a5568;
+      margin-left: 8px;
+    }
+    
+    .btn-new-preset {
+      width: 100%;
+      padding: 10px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .btn-new-preset:hover {
+      background: #5a67d8;
+    }
+    
+    .preset-settings-section {
+      margin-bottom: 32px;
+    }
+    
+    .preset-settings-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 16px;
+    }
+    
+    .preset-form-group {
+      margin-bottom: 16px;
+    }
+    
+    .preset-form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 8px;
+    }
+    
+    .curve-editor-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-top: 24px;
+    }
+    
+    .curve-editor-panel {
+      background: #f7fafc;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    
+    .curve-editor-header {
+      font-size: 14px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 12px;
+    }
+    
+    .curve-canvas-container {
+      position: relative;
+      background: white;
+      border-radius: 8px;
+      border: 2px solid #e2e8f0;
+      overflow: hidden;
+    }
+    
+    .curve-canvas {
+      display: block;
+      width: 100%;
+      cursor: crosshair;
+    }
+    
+    .curve-help-text {
+      font-size: 11px;
+      color: #718096;
+      margin-top: 8px;
+      text-align: center;
+    }
+    
+    .preset-action-bar {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 2px solid #e2e8f0;
+    }
+    
+    .btn-delete {
+      padding: 12px 24px;
+      background: #f56565;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .btn-delete:hover {
+      background: #e53e3e;
+    }
+    
+    .btn-delete:disabled {
+      background: #cbd5e0;
+      cursor: not-allowed;
     }
 
     @media (max-width: 1600px) {
@@ -751,6 +943,109 @@
       </div>
       <div class="chart-container">
         <canvas id="powerChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal" id="presetEditorModal">
+    <div class="modal-content preset-editor">
+      <div class="preset-editor-sidebar">
+        <div class="preset-list-header">
+          <span>Presets</span>
+        </div>
+        <button class="btn-new-preset" onclick="createNewPreset()">+ New Preset</button>
+        <div style="height: 16px;"></div>
+        <div class="preset-list" id="presetList"></div>
+      </div>
+      
+      <div class="preset-editor-main">
+        <div class="modal-header" style="margin-bottom: 24px;">
+          <div class="modal-title" id="presetEditorTitle">Select a Preset</div>
+          <button class="close-btn" onclick="closePresetEditor()">✕</button>
+        </div>
+        
+        <div id="presetEditorContent">
+          <div class="preset-settings-section">
+            <div class="preset-settings-title">Preset Settings</div>
+            
+            <div class="preset-form-group">
+              <label class="preset-form-label">Name</label>
+              <input type="text" id="presetName" class="input-field" placeholder="My Custom Preset">
+            </div>
+            
+            <div class="preset-form-group">
+              <label class="preset-form-label">Description</label>
+              <input type="text" id="presetDescription" class="input-field" placeholder="Custom flow pattern">
+            </div>
+            
+            <div class="preset-form-group">
+              <label class="preset-form-label">Cycle Duration (seconds)</label>
+              <input type="number" id="presetCycleDuration" class="input-field" value="60" min="5" max="300">
+            </div>
+          </div>
+          
+          <div class="preset-settings-section">
+            <div class="preset-settings-title">Flow Curves</div>
+            <p style="color: #718096; font-size: 14px; margin-bottom: 16px;">
+              Click to add keyframes, drag to move them, click again to delete. The system will smoothly interpolate between points.
+            </p>
+            
+            <div class="curve-editor-grid">
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">Wavemaker 1</div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas1" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
+              
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">Wavemaker 2</div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas2" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
+              
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">Wavemaker 3</div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas3" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
+              
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">Wavemaker 4</div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas4" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
+              
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">Wavemaker 5</div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas5" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
+              
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">Wavemaker 6</div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas6" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="preset-action-bar">
+            <button class="save-btn" onclick="savePreset()" style="flex: 1; margin: 0;">Save Preset</button>
+            <button class="btn-delete" id="deletePresetBtn" onclick="deletePreset()" disabled>Delete Preset</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1219,8 +1514,348 @@
       }
     }
 
-    function openPresetEditor() {
-      alert('Preset editor coming soon! This will let you design custom flow patterns with graphical curve editor.');
+    let allPresets = [];
+    let selectedPresetId = null;
+    let presetCurveData = {};
+    let curveEditors = [];
+    
+    async function openPresetEditor() {
+      document.getElementById('presetEditorModal').classList.add('active');
+      await loadAllPresets();
+      initializeCurveEditors();
+    }
+    
+    function closePresetEditor() {
+      document.getElementById('presetEditorModal').classList.remove('active');
+      selectedPresetId = null;
+    }
+    
+    async function loadAllPresets() {
+      try {
+        const res = await fetch('/api/presets');
+        allPresets = await res.json();
+        renderPresetList();
+      } catch (err) {
+        console.error('Failed to load presets:', err);
+      }
+    }
+    
+    function renderPresetList() {
+      const list = document.getElementById('presetList');
+      list.innerHTML = allPresets.map(preset => `
+        <div class="preset-list-item ${preset.id === selectedPresetId ? 'active' : ''} ${preset.is_built_in ? 'built-in' : ''}" 
+             onclick="selectPresetForEditing(${preset.id})">
+          <div class="preset-item-name">
+            ${preset.name}
+            ${preset.is_built_in ? '<span class="preset-item-badge">Built-in</span>' : ''}
+          </div>
+          <div class="preset-item-desc">${preset.description}</div>
+        </div>
+      `).join('');
+    }
+    
+    function selectPresetForEditing(presetId) {
+      selectedPresetId = presetId;
+      const preset = allPresets.find(p => p.id === presetId);
+      if (!preset) return;
+      
+      document.getElementById('presetEditorTitle').textContent = `Edit: ${preset.name}`;
+      document.getElementById('presetName').value = preset.name;
+      document.getElementById('presetDescription').value = preset.description;
+      document.getElementById('presetCycleDuration').value = preset.cycle_duration_sec;
+      document.getElementById('deletePresetBtn').disabled = preset.is_built_in;
+      
+      presetCurveData = JSON.parse(JSON.stringify(preset.flow_curves));
+      
+      renderPresetList();
+      drawAllCurves();
+    }
+    
+    function createNewPreset() {
+      selectedPresetId = null;
+      
+      document.getElementById('presetEditorTitle').textContent = 'New Preset';
+      document.getElementById('presetName').value = 'My Custom Flow';
+      document.getElementById('presetDescription').value = 'Custom flow pattern';
+      document.getElementById('presetCycleDuration').value = 60;
+      document.getElementById('deletePresetBtn').disabled = true;
+      
+      presetCurveData = {};
+      for (let i = 1; i <= 6; i++) {
+        presetCurveData[`wavemaker_${i}`] = [
+          { time: 0, power: 50 },
+          { time: 60, power: 50 }
+        ];
+      }
+      
+      renderPresetList();
+      drawAllCurves();
+    }
+    
+    async function savePreset() {
+      const name = document.getElementById('presetName').value.trim();
+      const description = document.getElementById('presetDescription').value.trim();
+      const cycleDuration = parseInt(document.getElementById('presetCycleDuration').value);
+      
+      if (!name) {
+        alert('Please enter a preset name');
+        return;
+      }
+      
+      const normalizedCurves = {};
+      for (let i = 1; i <= 6; i++) {
+        const key = `wavemaker_${i}`;
+        const curve = presetCurveData[key] || [];
+        curve.sort((a, b) => a.time - b.time);
+        normalizedCurves[key] = curve.map(pt => ({
+          time: Math.max(0, Math.min(cycleDuration, pt.time)),
+          power: Math.max(0, Math.min(100, Math.round(pt.power)))
+        }));
+      }
+      
+      const payload = {
+        name,
+        description,
+        cycle_duration_sec: cycleDuration,
+        flow_curves: normalizedCurves
+      };
+      
+      try {
+        if (selectedPresetId) {
+          await fetch(`/api/presets/${selectedPresetId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          await fetch('/api/presets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+        
+        await loadAllPresets();
+        await loadPresets();
+      } catch (err) {
+        console.error('Failed to save preset:', err);
+        alert('Failed to save preset. Check console for details.');
+      }
+    }
+    
+    async function deletePreset() {
+      if (!selectedPresetId) return;
+      
+      const preset = allPresets.find(p => p.id === selectedPresetId);
+      if (!preset || preset.is_built_in) return;
+      
+      if (!confirm(`Delete preset "${preset.name}"?`)) return;
+      
+      try {
+        await fetch(`/api/presets/${selectedPresetId}`, {
+          method: 'DELETE'
+        });
+        
+        selectedPresetId = null;
+        await loadAllPresets();
+        await loadPresets();
+        createNewPreset();
+      } catch (err) {
+        console.error('Failed to delete preset:', err);
+        alert('Failed to delete preset.');
+      }
+    }
+    
+    function initializeCurveEditors() {
+      curveEditors = [];
+      for (let i = 1; i <= 6; i++) {
+        const canvas = document.getElementById(`curveCanvas${i}`);
+        const wavemakerKey = `wavemaker_${i}`;
+        
+        const editor = {
+          canvas,
+          wavemakerKey,
+          draggedPointIndex: -1,
+          hoverPointIndex: -1
+        };
+        
+        canvas.addEventListener('mousedown', (e) => handleCurveMouseDown(e, editor));
+        canvas.addEventListener('mousemove', (e) => handleCurveMouseMove(e, editor));
+        canvas.addEventListener('mouseup', (e) => handleCurveMouseUp(e, editor));
+        canvas.addEventListener('mouseleave', (e) => handleCurveMouseUp(e, editor));
+        
+        curveEditors.push(editor);
+      }
+      
+      drawAllCurves();
+    }
+    
+    function handleCurveMouseDown(e, editor) {
+      const rect = editor.canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const cycleDuration = parseInt(document.getElementById('presetCycleDuration').value) || 60;
+      const clickedIndex = findNearestPoint(x, y, editor.canvas, editor.wavemakerKey, cycleDuration);
+      
+      if (clickedIndex >= 0) {
+        const curve = presetCurveData[editor.wavemakerKey] || [];
+        if (e.shiftKey && curve.length > 2) {
+          curve.splice(clickedIndex, 1);
+          drawCurve(editor.canvas, editor.wavemakerKey, cycleDuration);
+        } else {
+          editor.draggedPointIndex = clickedIndex;
+        }
+      } else {
+        const time = (x / editor.canvas.width) * cycleDuration;
+        const power = 100 - (y / editor.canvas.height) * 100;
+        
+        if (!presetCurveData[editor.wavemakerKey]) {
+          presetCurveData[editor.wavemakerKey] = [];
+        }
+        
+        presetCurveData[editor.wavemakerKey].push({
+          time: Math.max(0, Math.min(cycleDuration, time)),
+          power: Math.max(0, Math.min(100, power))
+        });
+        
+        presetCurveData[editor.wavemakerKey].sort((a, b) => a.time - b.time);
+        drawCurve(editor.canvas, editor.wavemakerKey, cycleDuration);
+      }
+    }
+    
+    function handleCurveMouseMove(e, editor) {
+      const rect = editor.canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const cycleDuration = parseInt(document.getElementById('presetCycleDuration').value) || 60;
+      
+      if (editor.draggedPointIndex >= 0) {
+        const time = (x / editor.canvas.width) * cycleDuration;
+        const power = 100 - (y / editor.canvas.height) * 100;
+        
+        const curve = presetCurveData[editor.wavemakerKey] || [];
+        if (editor.draggedPointIndex < curve.length) {
+          curve[editor.draggedPointIndex].time = Math.max(0, Math.min(cycleDuration, time));
+          curve[editor.draggedPointIndex].power = Math.max(0, Math.min(100, power));
+          curve.sort((a, b) => a.time - b.time);
+          drawCurve(editor.canvas, editor.wavemakerKey, cycleDuration);
+        }
+      } else {
+        const hoverIndex = findNearestPoint(x, y, editor.canvas, editor.wavemakerKey, cycleDuration);
+        if (hoverIndex !== editor.hoverPointIndex) {
+          editor.hoverPointIndex = hoverIndex;
+          drawCurve(editor.canvas, editor.wavemakerKey, cycleDuration);
+        }
+      }
+    }
+    
+    function handleCurveMouseUp(e, editor) {
+      editor.draggedPointIndex = -1;
+    }
+    
+    function findNearestPoint(x, y, canvas, wavemakerKey, cycleDuration) {
+      const curve = presetCurveData[wavemakerKey] || [];
+      const threshold = 10;
+      
+      for (let i = 0; i < curve.length; i++) {
+        const pt = curve[i];
+        const px = (pt.time / cycleDuration) * canvas.width;
+        const py = (1 - pt.power / 100) * canvas.height;
+        
+        const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+        if (dist < threshold) return i;
+      }
+      
+      return -1;
+    }
+    
+    function drawAllCurves() {
+      const cycleDuration = parseInt(document.getElementById('presetCycleDuration').value) || 60;
+      for (let i = 1; i <= 6; i++) {
+        const canvas = document.getElementById(`curveCanvas${i}`);
+        const wavemakerKey = `wavemaker_${i}`;
+        drawCurve(canvas, wavemakerKey, cycleDuration);
+      }
+    }
+    
+    function drawCurve(canvas, wavemakerKey, cycleDuration) {
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      
+      ctx.clearRect(0, 0, width, height);
+      
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = (i / 4) * height;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      for (let i = 0; i <= 4; i++) {
+        const x = (i / 4) * width;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      
+      const curve = presetCurveData[wavemakerKey] || [];
+      if (curve.length === 0) return;
+      
+      ctx.strokeStyle = '#667eea';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      
+      for (let t = 0; t <= cycleDuration; t += 0.1) {
+        const power = interpolatePower(curve, t, cycleDuration);
+        const x = (t / cycleDuration) * width;
+        const y = (1 - power / 100) * height;
+        
+        if (t === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+      
+      curve.forEach((pt, idx) => {
+        const x = (pt.time / cycleDuration) * width;
+        const y = (1 - pt.power / 100) * height;
+        
+        ctx.fillStyle = '#667eea';
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+    }
+    
+    function interpolatePower(curve, time, cycleDuration) {
+      if (curve.length === 0) return 0;
+      if (curve.length === 1) return curve[0].power;
+      
+      if (time <= curve[0].time) return curve[0].power;
+      if (time >= curve[curve.length - 1].time) return curve[curve.length - 1].power;
+      
+      for (let i = 0; i < curve.length - 1; i++) {
+        const pt1 = curve[i];
+        const pt2 = curve[i + 1];
+        
+        if (time >= pt1.time && time <= pt2.time) {
+          const t = (time - pt1.time) / (pt2.time - pt1.time);
+          return pt1.power + t * (pt2.power - pt1.power);
+        }
+      }
+      
+      return curve[curve.length - 1].power;
     }
 
     function showSettings(arrayId) {

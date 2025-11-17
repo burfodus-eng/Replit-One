@@ -63,9 +63,6 @@ async def startup():
         app.state.stage_manager = StageManager(CONFIG)
         app.state.mgr = app.state.stage_manager
         
-        logger.info("Initializing automation service...")
-        app.state.automation = AutomationService()
-        
         logger.info("Initializing system health service...")
         app.state.health = SystemHealthService()
         
@@ -88,17 +85,25 @@ async def startup():
         logger.info("Connecting preset manager to wavemaker manager...")
         app.state.wavemaker_manager.set_preset_manager(app.state.preset_manager)
         
+        logger.info("Initializing automation service...")
+        app.state.automation = AutomationService(
+            store=app.state.store,
+            preset_manager=app.state.preset_manager
+        )
+        
         logger.info("Creating initial snapshot...")
         app.state.latest = app.state.stage_manager.snapshot()
         
         logger.info("Starting job scheduler...")
-        JobScheduler(
+        scheduler = JobScheduler(
             app.state.stage_manager,
             persist_cb=app.state.store.persist,
             interval_s=CONFIG['telemetry']['sample_interval_ms']/1000,
             power_allocator=app.state.power_allocator,
-            wavemaker_manager=app.state.wavemaker_manager
-        ).start(app)
+            wavemaker_manager=app.state.wavemaker_manager,
+            automation=app.state.automation
+        )
+        scheduler.start(app)
         
         logger.info("Reef Controller startup complete!")
         
