@@ -828,6 +828,21 @@
       border-color: rgba(102, 126, 234, 0.3);
     }
 
+    .flow-pattern-container {
+      margin: 16px 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .flow-pattern-canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+
     .mode-selector {
       width: 100%;
       padding: 12px 16px;
@@ -1351,9 +1366,6 @@
       console.log('[Wavemakers] Rendering', wavemakersData.length, 'wavemaker cards');
       
       grid.innerHTML = wavemakersData.map(wm => {
-        const power = localWavemakerPower.has(wm.id) ? localWavemakerPower.get(wm.id) : Math.round(wm.target_power_pct);
-        const mode = localWavemakerMode.has(wm.id) ? localWavemakerMode.get(wm.id) : wm.mode;
-        
         return `
         <div class="wavemaker-card">
           <div class="card-header">
@@ -1363,38 +1375,8 @@
             </div>
           </div>
 
-          <div class="slider-container">
-            <div class="slider-label">
-              <span>Mode</span>
-            </div>
-            <select 
-              class="mode-selector" 
-              id="mode-${wm.id}"
-              onchange="updateWavemakerMode('${wm.id}', this.value)"
-            >
-              <option value="off" ${mode === 'off' ? 'selected' : ''}>Off</option>
-              <option value="constant" ${mode === 'constant' ? 'selected' : ''}>Constant</option>
-              <option value="pulse" ${mode === 'pulse' ? 'selected' : ''}>Pulse</option>
-              <option value="gyre_left" ${mode === 'gyre_left' ? 'selected' : ''}>Gyre Left</option>
-              <option value="gyre_right" ${mode === 'gyre_right' ? 'selected' : ''}>Gyre Right</option>
-              <option value="random_reef" ${mode === 'random_reef' ? 'selected' : ''}>Random Reef</option>
-            </select>
-          </div>
-
-          <div class="slider-container">
-            <div class="slider-label">
-              <span>Target Power</span>
-              <span id="power-${wm.id}">${power}%</span>
-            </div>
-            <input
-              type="range"
-              class="slider"
-              min="0"
-              max="100"
-              value="${power}"
-              id="slider-${wm.id}"
-              onchange="updateWavemakerPower('${wm.id}', this.value)"
-            >
+          <div class="flow-pattern-container">
+            <canvas class="flow-pattern-canvas" id="flow-canvas-${wm.id}" width="300" height="80"></canvas>
           </div>
 
           <div class="telemetry-grid">
@@ -1414,6 +1396,71 @@
         </div>
         `;
       }).join('');
+      
+      drawFlowPatterns();
+    }
+
+    function drawFlowPatterns() {
+      if (!activePreset || !wavemakersData) return;
+      
+      wavemakersData.forEach(wm => {
+        const canvas = document.getElementById(`flow-canvas-${wm.id}`);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        ctx.clearRect(0, 0, width, height);
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(0, 0, width, height);
+        
+        const wavemakerKey = `wavemaker_${wm.id}`;
+        const curve = activePreset.flow_curves[wavemakerKey];
+        
+        if (!curve || curve.length === 0) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+          ctx.font = '14px system-ui';
+          ctx.textAlign = 'center';
+          ctx.fillText('No flow pattern', width / 2, height / 2);
+          return;
+        }
+        
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        
+        const cycleDuration = activePreset.cycle_duration_sec;
+        
+        for (let t = 0; t <= cycleDuration; t += cycleDuration / 200) {
+          const power = interpolatePower(curve, t, cycleDuration);
+          const x = (t / cycleDuration) * width;
+          const y = height - (power / 100) * (height - 10) - 5;
+          
+          if (t === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.beginPath();
+        ctx.moveTo(0, height);
+        for (let t = 0; t <= cycleDuration; t += cycleDuration / 200) {
+          const power = interpolatePower(curve, t, cycleDuration);
+          const x = (t / cycleDuration) * width;
+          const y = height - (power / 100) * (height - 10) - 5;
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(width, height);
+        ctx.closePath();
+        ctx.fill();
+      });
     }
 
     async function updateWavemakerMode(wavemakerId, mode) {
@@ -1465,6 +1512,7 @@
 
     let presetsData = [];
     let activePresetId = null;
+    let activePreset = null;
 
     async function loadPresets() {
       try {
@@ -1486,12 +1534,18 @@
         const res = await fetch('/api/presets/active/status');
         const data = await res.json();
         
-        if (data.active_preset) {
-          activePresetId = data.active_preset.id;
-          document.getElementById('presetSelector').value = activePresetId;
-        } else {
-          activePresetId = null;
-          document.getElementById('presetSelector').value = '';
+        const newPresetId = data.active_preset ? data.active_preset.id : null;
+        
+        if (newPresetId !== activePresetId) {
+          activePresetId = newPresetId;
+          activePreset = data.active_preset;
+          const selector = document.getElementById('presetSelector');
+          
+          if (activePresetId) {
+            selector.value = activePresetId;
+          } else {
+            selector.value = '';
+          }
         }
       } catch (err) {
         console.error('Failed to load active preset:', err);
@@ -1698,17 +1752,25 @@
       const cycleDuration = parseInt(document.getElementById('presetCycleDuration').value) || 60;
       const clickedIndex = findNearestPoint(x, y, editor.canvas, editor.wavemakerKey, cycleDuration);
       
+      console.log('[Preset Editor] Mouse down at', x, y, 'clicked index:', clickedIndex);
+      
       if (clickedIndex >= 0) {
         const curve = presetCurveData[editor.wavemakerKey] || [];
         if (e.shiftKey && curve.length > 2) {
+          console.log('[Preset Editor] Deleting point', clickedIndex);
           curve.splice(clickedIndex, 1);
           drawCurve(editor.canvas, editor.wavemakerKey, cycleDuration);
         } else {
+          console.log('[Preset Editor] Starting drag on point', clickedIndex);
           editor.draggedPointIndex = clickedIndex;
         }
       } else {
-        const time = (x / editor.canvas.width) * cycleDuration;
-        const power = 100 - (y / editor.canvas.height) * 100;
+        const displayWidth = rect.width;
+        const displayHeight = rect.height;
+        const time = (x / displayWidth) * cycleDuration;
+        const power = 100 - (y / displayHeight) * 100;
+        
+        console.log('[Preset Editor] Adding new point at time:', time.toFixed(1), 'power:', power.toFixed(1));
         
         if (!presetCurveData[editor.wavemakerKey]) {
           presetCurveData[editor.wavemakerKey] = [];
@@ -1731,8 +1793,10 @@
       const cycleDuration = parseInt(document.getElementById('presetCycleDuration').value) || 60;
       
       if (editor.draggedPointIndex >= 0) {
-        const time = (x / editor.canvas.width) * cycleDuration;
-        const power = 100 - (y / editor.canvas.height) * 100;
+        const displayWidth = rect.width;
+        const displayHeight = rect.height;
+        const time = (x / displayWidth) * cycleDuration;
+        const power = 100 - (y / displayHeight) * 100;
         
         const curve = presetCurveData[editor.wavemakerKey] || [];
         if (editor.draggedPointIndex < curve.length) {
@@ -1758,10 +1822,14 @@
       const curve = presetCurveData[wavemakerKey] || [];
       const threshold = 10;
       
+      const rect = canvas.getBoundingClientRect();
+      const displayWidth = rect.width;
+      const displayHeight = rect.height;
+      
       for (let i = 0; i < curve.length; i++) {
         const pt = curve[i];
-        const px = (pt.time / cycleDuration) * canvas.width;
-        const py = (1 - pt.power / 100) * canvas.height;
+        const px = (pt.time / cycleDuration) * displayWidth;
+        const py = (1 - pt.power / 100) * displayHeight;
         
         const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
         if (dist < threshold) return i;
