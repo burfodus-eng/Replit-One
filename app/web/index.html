@@ -1434,7 +1434,7 @@
         ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
         ctx.fillRect(0, 0, width, height);
         
-        const wavemakerKey = `wavemaker_${wm.id}`;
+        const wavemakerKey = `wavemaker_${wm.id + 1}`;
         const curve = activePreset.flow_curves[wavemakerKey];
         
         if (!curve || curve.length === 0) {
