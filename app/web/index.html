@@ -24,7 +24,7 @@
       margin: 0 auto;
       padding: 12px;
       max-height: 1200px;
-      overflow: hidden;
+      overflow-y: auto;
     }
 
     header {
@@ -42,6 +42,18 @@
       font-size: 28px;
       font-weight: 700;
       color: #667eea;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    
+    .version-badge {
+      font-size: 14px;
+      font-weight: 600;
+      color: #718096;
+      background: rgba(102, 126, 234, 0.1);
+      padding: 4px 10px;
+      border-radius: 6px;
     }
 
     .live-clock {
@@ -619,7 +631,10 @@
 <body>
   <div class="container">
     <header>
-      <div class="site-title">🪸 Reef Controller</div>
+      <div class="site-title">
+        <span>🪸 Reef Controller</span>
+        <span class="version-badge" id="versionBadge">v1.0.0</span>
+      </div>
       <div class="live-clock" id="liveClock">--:--:--</div>
       <div class="health-indicator health-ok" id="healthIndicator">
         <span>●</span>
@@ -698,6 +713,8 @@
   </div>
 
   <script>
+    const VERSION = 'v1.0.0';
+    
     let arraysData = [];
     let wavemakersData = [];
     let currentSettingsArrayId = null;
