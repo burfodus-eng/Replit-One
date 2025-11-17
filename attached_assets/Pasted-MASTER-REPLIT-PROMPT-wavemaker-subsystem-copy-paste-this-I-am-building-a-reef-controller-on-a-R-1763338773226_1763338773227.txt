@@ -1,0 +1,67 @@
+MASTER REPLIT PROMPT — wavemaker subsystem (copy/paste this)
+
+I am building a reef controller on a Raspberry Pi.
+The system should simulate hardware when running inside Replit, and use real I²C/GPIO when running on the Pi using an environment variable (HARDWARE_MODE = "sim" or "pi").
+
+I need a full backend subsystem for controlling 6 wavemaker channels, each with its own PWM output and power sensor input.
+
+Hardware model:
+– PWM is generated through a PCA9685 chip.
+– Power readings come from INA219/INA226 sensors or simulated values.
+– Each pump has a “signal wire” controlled by PWM, and draws power from a 24V bus.
+
+Create a folder structure like:
+/hardware
+pca.py
+sensors.py
+hal.py
+/models
+wavemaker.py
+/services
+wavemaker_manager.py
+/api
+wavemakers.py
+/app
+main.py
+
+Define a WavemakerChannel class with:
+– id
+– name
+– mode: "off", "constant", "pulse", "gyre_left", "gyre_right", "random_reef"
+– target_power: 0–100%
+– current_power: watts
+– internal pattern state
+– method _compute_duty_from_mode(t_now)
+– method update_pwm(t_now)
+– method read_power()
+
+Define a WavemakerManager that:
+– Manages 6 channels
+– update_all(t_now): calls each channel’s update_pwm
+– sample_all_power(): polls INA sensors, updates each channel’s current_power
+– Stores power history (last 15 minutes) in RAM
+
+HAL (Hardware Abstraction Layer):
+– hardware/hal.py should select simulated or real hardware drivers based on HARDWARE_MODE
+– Simulated mode should generate smooth values
+– Real mode should use smbus2 and PCA9685 libraries
+– Wrap hardware functions like:
+– hw_pwm_write(channel, duty)
+– hw_read_sensor(sensor_id)
+– hw_read_bus()
+
+Background tasks:
+– control_loop: runs 20 Hz (50 ms)
+– telemetry_loop: runs 1 Hz
+
+API endpoints (FastAPI):
+– GET /api/wavemakers → returns 6-channel status (mode, target power, current power)
+– PUT /api/wavemakers/{id} → update mode + target power
+– GET /api/wavemakers/history?window=900 → returns last 900 seconds of power data
+
+Frontend/UI considerations:
+– The UI should poll main data at 1 Hz (not faster)
+– History graphs should refresh every 5 seconds
+
+Build the complete backend code with all folders and files above.
+Ensure everything is clean, modular, type-annotated, and production-safe.
