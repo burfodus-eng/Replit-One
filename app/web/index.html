@@ -1561,6 +1561,19 @@
       return diffMinutes;
     }
 
+    function formatCompactTime(minutes) {
+      // Format time in compact format: 1h34m, 23m, etc.
+      if (minutes < 60) {
+        return `${minutes}m`;
+      }
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      if (mins === 0) {
+        return `${hours}h`;
+      }
+      return `${hours}h${mins}m`;
+    }
+
     async function editTask(taskId) {
       // Open scheduler modal and load task for editing
       await openScheduler();
@@ -1579,8 +1592,8 @@
           <div class="task-item completed">
             <div class="task-name">${task.name}</div>
             <div class="task-time">
-              ${task.time}
-              ${task.id ? `<a href="#" onclick="editTask(${task.id}); return false;" style="margin-left: 8px; font-size: 0.8em; color: #667eea; text-decoration: none;">edit</a>` : ''}
+              <span style="font-weight: 600;">${task.time}</span>
+              ${task.id ? `<button onclick="editTask(${task.id}); event.stopPropagation();" style="margin-left: 8px; padding: 4px 8px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">✎</button>` : ''}
             </div>
           </div>
         `).join('') || '<p style="color: #a0aec0;">No completed tasks</p>';
@@ -1588,13 +1601,14 @@
         // Recalculate ETA on client side for accurate local time
         document.getElementById('upcomingTasks').innerHTML = upcoming.slice(0, 5).map(task => {
           const etaMinutes = calculateETA(task.time);
+          const compactTime = formatCompactTime(etaMinutes);
           return `
             <div class="task-item upcoming">
               <div class="task-name">${task.name}</div>
-              <div class="task-time">
-                ${task.time}
-                <span class="task-eta">in ${etaMinutes} min</span>
-                ${task.id ? `<a href="#" onclick="editTask(${task.id}); return false;" style="margin-left: 8px; font-size: 0.8em; color: #667eea; text-decoration: none;">edit</a>` : ''}
+              <div class="task-time" style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 600;">${task.time}</span>
+                <span class="task-eta" style="color: #667eea; font-weight: 500;">${compactTime}</span>
+                ${task.id ? `<button onclick="editTask(${task.id}); event.stopPropagation();" style="padding: 4px 8px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">✎</button>` : ''}
               </div>
             </div>
           `;
