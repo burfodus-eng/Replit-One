@@ -109,7 +109,7 @@ async def startup():
         logger.info("Initializing hardware control system...")
         from .services.hw_devices import registry as hw_registry, DeviceConfig
         from .services.hw_patterns import pattern_registry, PatternConfig
-        from .hw_scheduler.realtime_loop import start_hw_scheduler, set_led_follow
+        from .hw_scheduler.realtime_loop import start_hw_scheduler, set_led_follow, set_preset_manager
         
         # Initialize WM1 (Wavemaker Channel 1) on GPIO18
         wm1_config = DeviceConfig(
@@ -138,7 +138,7 @@ async def startup():
         # Configure LED1 to follow WM1
         set_led_follow("LED1", "WM1")
         
-        # Create default PULSE pattern for WM1
+        # Create default PULSE pattern for WM1 (fallback when no preset active)
         default_pattern = PatternConfig(
             mode="PULSE",
             period_s=6.0,
@@ -148,6 +148,9 @@ async def startup():
             max_intensity=1.0
         )
         pattern_registry.create_pattern("WM1", default_pattern)
+        
+        # Link PresetManager to hardware control - presets drive GPIO output
+        set_preset_manager(app.state.preset_manager)
         
         # Start hardware scheduler (20Hz real-time loop)
         start_hw_scheduler()

@@ -1525,6 +1525,34 @@
       }
     }
 
+    function calculateETA(taskTime) {
+      // Calculate ETA in client's local timezone
+      const now = new Date();
+      const [hours, minutes] = taskTime.split(':').map(Number);
+      
+      // Create task datetime for today
+      let taskDate = new Date();
+      taskDate.setHours(hours, minutes, 0, 0);
+      
+      // If task time has passed today, it's for tomorrow
+      if (taskDate <= now) {
+        taskDate.setDate(taskDate.getDate() + 1);
+      }
+      
+      // Calculate difference in minutes
+      const diffMs = taskDate - now;
+      const diffMinutes = Math.round(diffMs / 60000);
+      
+      return diffMinutes;
+    }
+
+    async function editTask(taskId) {
+      // Open scheduler modal and load task for editing
+      await openScheduler();
+      await loadAllScheduledTasks();
+      selectTaskForEditing(taskId);
+    }
+
     async function loadTasks() {
       try {
         const [completed, upcoming] = await Promise.all([
@@ -1535,19 +1563,27 @@
         document.getElementById('completedTasks').innerHTML = completed.slice(0, 5).map(task => `
           <div class="task-item completed">
             <div class="task-name">${task.name}</div>
-            <div class="task-time">${task.time}</div>
+            <div class="task-time">
+              ${task.time}
+              ${task.id ? `<a href="#" onclick="editTask(${task.id}); return false;" style="margin-left: 8px; font-size: 0.8em; color: #667eea; text-decoration: none;">edit</a>` : ''}
+            </div>
           </div>
         `).join('') || '<p style="color: #a0aec0;">No completed tasks</p>';
         
-        document.getElementById('upcomingTasks').innerHTML = upcoming.slice(0, 5).map(task => `
-          <div class="task-item upcoming">
-            <div class="task-name">${task.name}</div>
-            <div class="task-time">
-              ${task.time}
-              <span class="task-eta">in ${task.eta_minutes} min</span>
+        // Recalculate ETA on client side for accurate local time
+        document.getElementById('upcomingTasks').innerHTML = upcoming.slice(0, 5).map(task => {
+          const etaMinutes = calculateETA(task.time);
+          return `
+            <div class="task-item upcoming">
+              <div class="task-name">${task.name}</div>
+              <div class="task-time">
+                ${task.time}
+                <span class="task-eta">in ${etaMinutes} min</span>
+                ${task.id ? `<a href="#" onclick="editTask(${task.id}); return false;" style="margin-left: 8px; font-size: 0.8em; color: #667eea; text-decoration: none;">edit</a>` : ''}
+              </div>
             </div>
-          </div>
-        `).join('') || '<p style="color: #a0aec0;">No upcoming tasks</p>';
+          `;
+        }).join('') || '<p style="color: #a0aec0;">No upcoming tasks</p>';
       } catch (err) {
         console.error('Failed to load tasks:', err);
       }
@@ -2461,6 +2497,7 @@
         showToast(selectedTaskId ? 'Task updated successfully' : 'Task created successfully', 'success');
         await loadAllScheduledTasks();
         await loadTasks();
+        closeScheduler();  // Close modal after successful save
       } catch (err) {
         console.error('Failed to save scheduled task:', err);
         showToast('Failed to save task', 'error');
