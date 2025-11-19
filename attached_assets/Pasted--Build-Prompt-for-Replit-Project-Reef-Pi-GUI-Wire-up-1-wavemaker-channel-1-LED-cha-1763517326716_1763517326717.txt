@@ -1,0 +1,315 @@
+# Build Prompt for Replit
+
+## Project: Reef Pi GUI — Wire up **1 wavemaker channel** + **1 LED channel** to Raspberry Pi GPIO, add **per‑channel settings**, and make **scheduler/calendar/tasks** run in real time.
+
+---
+
+## 0) Goals (MVP for today)
+
+1. **Drive Wavemaker CH1** (top‑left tile in GUI) from a Raspberry Pi GPIO using PWM.
+2. **Drive LED CH1** from a second GPIO using PWM and mirror the wavemaker’s flow patterns so we can see the brightness change in real time.
+3. **Per‑channel Settings UI** for wavemakers:
+
+   * Editable **GPIO pin** (BCM numbering)
+   * **PWM frequency (Hz)**
+   * **Output range mapping** (e.g., 0–0.6 V, 0–5 V) for UI; backend still outputs 0–100% duty, scaling occurs in hardware abstraction.
+   * **Pattern params** (pulse/gyre: period, duty curve, min/max intensity).
+4. **Real‑time engine**: unify **time display, scheduler, calendar, and task list** so they tick in real time (no mock clocks). Use APScheduler in backend and WebSocket/SSE to push updates to the UI.
+5. **Safe fallback**: if running off‑Pi (e.g., in Replit), auto‑mock GPIO with a simulator and still exercise the endpoints/logic.
+
+---
+
+## 1) Hardware & signal assumptions
+
+* Raspberry Pi 4/5, **BCM GPIO** numbering.
+* Use **hardware PWM** capable pins when possible (e.g., **GPIO18 (PWM0)**, **GPIO19 (PWM1)**) for smoother output. For today:
+
+  * **Wavemaker CH1 → GPIO18** (PWM0)
+  * **LED CH1 → GPIO19** (PWM1)
+* GPIO produces 3.3 V logic PWM. **Analog voltage** (0–0.6 V or 0–5 V) will be produced by user’s external RC filter + op‑amp level/scale. Backend exposes **duty cycle [0–1]**; mapping to target volts is just `V_out = minV + duty*(maxV-minV)` for UI display only.
+* Start with **PWM frequency 500–1000 Hz** for LED; **~100–500 Hz** for wavemaker control (adjustable in settings).
+
+---
+
+## 2) Dependencies
+
+* Python: `fastapi`, `uvicorn[standard]`, `pydantic`, `apscheduler`, `python-socketio[asgi]` or `starlette.websockets` (pick one), `aiodns`, `orjson` (optional), `pyyaml` for config, `pigpio` (preferred) or `RPi.GPIO` (fallback).
+* Dev mock: create `gpio_mock.py` used automatically if `pigpio` not available.
+
+**requirements.txt (append):**
+
+```
+fastapi
+uvicorn[standard]
+apscheduler
+python-socketio[asgi]
+PyYAML
+pigpio
+```
+
+*(If pigpio install is painful on Replit, still code against it and fall back to mock.)*
+
+---
+
+## 3) Config changes
+
+Add a new `devices.yaml` (or extend `config.yaml`) with per‑channel settings; example:
+
+```yaml
+wavemakers:
+  - id: WM1
+    label: "Wavemaker CH1"
+    gpio_pin: 18      # BCM
+    pwm_freq_hz: 200
+    min_intensity: 0.05   # avoid full stop if pump stalls
+    max_intensity: 1.0
+    volts_min: 0.0
+    volts_max: 0.6
+    pattern: {
+      mode: "PULSE",     # PULSE | GYRE | CONSTANT
+      period_s: 6,
+      on_ratio: 0.5,      # for PULSE
+      phase_deg: 0
+    }
+leds:
+  - id: LED1
+    label: "LED CH1"
+    gpio_pin: 19
+    pwm_freq_hz: 800
+    volts_min: 0.0
+    volts_max: 5.0
+    follow_wavemaker_id: WM1   # mirrors WM1 intensity
+```
+
+---
+
+## 4) Backend tasks
+
+### 4.1 Create GPIO abstraction
+
+`app/hw/gpio_iface.py`
+
+```python
+from typing import Protocol
+
+class PWMChannel(Protocol):
+    def start(self, duty: float): ...
+    def set_frequency(self, hz: int): ...
+    def set_duty(self, duty: float): ...  # 0.0–1.0
+    def stop(self): ...
+```
+
+`app/hw/pigpio_driver.py`
+
+```python
+import pigpio
+
+class PigpioPWM:
+    def __init__(self, pin: int, freq: int = 500):
+        self.pi = pigpio.pi()
+        self.pin = pin
+        self.pi.set_mode(pin, pigpio.OUTPUT)
+        self.set_frequency(freq)
+        self.set_duty(0.0)
+
+    def set_frequency(self, hz: int):
+        self.pi.set_PWM_frequency(self.pin, hz)
+
+    def set_duty(self, duty: float):
+        duty = max(0.0, min(1.0, duty))
+        self.pi.set_PWM_dutycycle(self.pin, int(duty * 255))
+
+    def start(self, duty: float = 0.0):
+        self.set_duty(duty)
+
+    def stop(self):
+        self.pi.set_PWM_dutycycle(self.pin, 0)
+```
+
+`app/hw/gpio_mock.py` (used if pigpio missing)
+
+```python
+class PigpioPWM:
+    def __init__(self, pin: int, freq: int = 500):
+        self.pin, self.freq, self.duty = pin, freq, 0.0
+    def set_frequency(self, hz: int): self.freq = hz
+    def set_duty(self, duty: float): self.duty = duty
+    def start(self, duty: float = 0.0): self.duty = duty
+    def stop(self): self.duty = 0.0
+```
+
+### 4.2 Device registry / services
+
+`app/services/devices.py`
+
+```python
+from typing import Dict
+try:
+    from app.hw.pigpio_driver import PigpioPWM
+except Exception:
+    from app.hw.gpio_mock import PigpioPWM
+
+class PWMDevice:
+    def __init__(self, name, pin, freq):
+        self.name = name
+        self.hw = PigpioPWM(pin, freq)
+        self.min_intensity = 0.0
+        self.max_intensity = 1.0
+    def set_range(self, min_i, max_i):
+        self.min_intensity, self.max_intensity = min_i, max_i
+    def apply(self, x):
+        # x in [0,1] → clamp + map into [min,max]
+        d = max(0.0, min(1.0, x))
+        y = self.min_intensity + d*(self.max_intensity - self.min_intensity)
+        self.hw.set_duty(y)
+
+class DeviceRegistry:
+    def __init__(self):
+        self.wm: Dict[str, PWMDevice] = {}
+        self.led: Dict[str, PWMDevice] = {}
+
+registry = DeviceRegistry()
+```
+
+### 4.3 Patterns engine
+
+`app/services/patterns.py`
+
+```python
+import math, time
+
+class Pattern:
+    def __init__(self, mode="CONSTANT", period_s=5.0, on_ratio=0.5, phase_deg=0):
+        self.mode, self.T, self.on, self.phase = mode, period_s, on_ratio, math.radians(phase_deg)
+    def value(self, t: float) -> float:
+        if self.mode == "CONSTANT":
+            return 1.0
+        if self.mode == "PULSE":
+            x = (t % self.T) / self.T
+            return 1.0 if x < self.on else 0.0
+        if self.mode == "GYRE":
+            x = (t % self.T)/self.T
+            return 0.5*(1+math.sin(2*math.pi*x + self.phase))
+        return 0.0
+```
+
+### 4.4 Scheduler + loop
+
+* Use **APScheduler** to tick at 10–20 Hz for pattern evaluation, apply to devices.
+* Calendar/Tasks: create jobs from entries; push events to frontend via WebSocket.
+
+`app/scheduler/runtime.py`
+
+```python
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from datetime import datetime
+from app.services.devices import registry
+from app.services.patterns import Pattern
+
+patterns = {}  # id → Pattern
+
+async def tick():
+    now = datetime.now().timestamp()
+    # Wavemaker WM1
+    p = patterns.get("WM1")
+    if p:
+        v = p.value(now)
+        wm = registry.wm.get("WM1")
+        if wm:
+            wm.apply(v)
+    # LED mirrors WM1
+    led = registry.led.get("LED1")
+    if led and p:
+        led.apply(p.value(now))
+
+scheduler = AsyncIOScheduler()
+
+def start_scheduler():
+    scheduler.add_job(tick, "interval", seconds=0.05)  # 20 Hz
+    scheduler.start()
+```
+
+### 4.5 FastAPI endpoints
+
+* `GET /api/devices` → current config/state
+* `POST /api/wavemakers/{id}/settings` → update pin/freq/range/pattern
+* `POST /api/wavemakers/{id}/mode` → set mode (MANUAL/PROGRAM)
+* `POST /api/wavemakers/{id}/manual` → set duty [0–1]
+* `POST /api/leds/{id}/follow` → follow a wavemaker id (or manual)
+* WebSocket `/ws/state` → push current intensities, tasks due next, clock ticks
+
+### 4.6 App startup
+
+`app/main.py`
+
+```python
+from fastapi import FastAPI
+from app.scheduler.runtime import start_scheduler, patterns
+from app.services.devices import registry, PWMDevice
+from app.services.patterns import Pattern
+
+app = FastAPI()
+
+@app.on_event("startup")
+async def boot():
+    # load YAML, for brevity hardcode WM1 & LED1
+    wm1 = PWMDevice("WM1", pin=18, freq=200)
+    wm1.set_range(0.05, 1.0)
+    registry.wm["WM1"] = wm1
+
+    led1 = PWMDevice("LED1", pin=19, freq=800)
+    registry.led["LED1"] = led1
+
+    patterns["WM1"] = Pattern(mode="PULSE", period_s=6, on_ratio=0.5)
+
+    start_scheduler()
+```
+
+---
+
+## 5) Frontend tasks (assuming existing UI framework)
+
+1. **Per‑channel settings modal** on each wavemaker tile:
+
+   * Fields: GPIO pin (select), PWM freq, volts_min/max, min/max intensity, pattern mode & params.
+   * Save triggers `POST /api/wavemakers/WM1/settings`.
+2. **LED tile**: show “Follow: WM1” toggle; when ON, disables manual slider.
+3. **Live status**: subscribe to WebSocket `/ws/state` and update gauges/sliders/clock/event list in real time.
+4. **Top‑left tile (WM1)**: add **Start/Stop**, **Manual/Program** switch, and a **pattern preview mini‑sparkline** based on current mode/params.
+
+---
+
+## 6) Real‑time calendar/scheduler integration (today: minimal)
+
+* Use APScheduler for both **pattern tick** and **task runs**.
+* Add a sample scheduled job (e.g., "At 13:00 set WM1 mode=GYRE, T=12s") and surface it in the calendar list.
+* When job fires, backend updates `patterns[WM1]`, pushes UI event via WebSocket.
+
+---
+
+## 7) Testing checklist
+
+* [ ] Running on **Replit**: starts with mock GPIO; tiles update; LED mirrors WM1 pattern.
+* [ ] Running on **Pi**: `sudo pigpiod` running; PWM appears on GPIO18 (WM1) and GPIO19 (LED1) at set frequencies.
+* [ ] Change WM1 pattern in settings → LED brightness follows within <100 ms.
+* [ ] Toggle Manual mode → set manual duty and verify output.
+* [ ] Calendar job at a near‑future minute mutates WM1 pattern; UI reflects change.
+
+---
+
+## 8) Safety & notes
+
+* **Do not exceed** pump/LED driver input specs. GPIO is 3.3 V logic only.
+* For analog voltages, use **RC filter + op‑amp buffer/scale** (already on bench). Keep PWM freq appropriate for your filter.
+* Provide an **emergency stop** endpoint (`POST /api/stop_all`) that zeros all duties.
+
+---
+
+## 9) Deliverables for this iteration
+
+* New modules under `app/hw/`, `app/services/`, `app/scheduler/` as above.
+* Endpoints + WebSocket.
+* Per‑channel settings modal for WM1 + LED1.
+* Minimal calendar job wiring (one demo rule that users can edit later).
+
+**Please implement exactly this MVP; keep code modular so we can scale to N channels next.**
