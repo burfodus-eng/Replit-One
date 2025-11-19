@@ -5,9 +5,12 @@ from typing import Dict, Optional
 from dataclasses import dataclass
 
 try:
+    import pigpio
+    # If pigpio module exists, try to use it
     from app.hw.pigpio_driver import PigpioPWM
     GPIO_MODE = "HARDWARE"
 except (ImportError, RuntimeError):
+    # Pigpio not available, use mock
     from app.hw.gpio_mock import PigpioPWM
     GPIO_MODE = "MOCK"
 

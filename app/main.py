@@ -14,7 +14,7 @@ from .services.events import EventsService
 from .services.power_allocator import PowerAllocator
 from .services.wavemaker_manager import WavemakerManager
 from .services.preset_manager import PresetManager
-from .routers import telemetry, control, config_api, automation, arrays, history, wavemakers, presets
+from .routers import telemetry, control, config_api, automation, arrays, history, wavemakers, presets, hardware
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -43,6 +43,7 @@ app.include_router(arrays.router, prefix='/api')
 app.include_router(history.router)
 app.include_router(wavemakers.router, prefix='/api')
 app.include_router(presets.router, prefix='/api')
+app.include_router(hardware.router, prefix='/api')
 
 
 @app.on_event('startup')
@@ -104,6 +105,53 @@ async def startup():
             automation=app.state.automation
         )
         scheduler.start(app)
+        
+        logger.info("Initializing hardware control system...")
+        from .services.hw_devices import registry as hw_registry, DeviceConfig
+        from .services.hw_patterns import pattern_registry, PatternConfig
+        from .hw_scheduler.realtime_loop import start_hw_scheduler, set_led_follow
+        
+        # Initialize WM1 (Wavemaker Channel 1) on GPIO18
+        wm1_config = DeviceConfig(
+            name="Wavemaker CH1",
+            gpio_pin=18,
+            pwm_freq_hz=200,
+            min_intensity=0.05,  # Avoid full stop
+            max_intensity=1.0,
+            volts_min=0.0,
+            volts_max=0.6
+        )
+        hw_registry.register_wavemaker("WM1", wm1_config)
+        
+        # Initialize LED1 on GPIO19 to mirror WM1
+        led1_config = DeviceConfig(
+            name="LED CH1",
+            gpio_pin=19,
+            pwm_freq_hz=800,
+            min_intensity=0.0,
+            max_intensity=1.0,
+            volts_min=0.0,
+            volts_max=5.0
+        )
+        hw_registry.register_led("LED1", led1_config)
+        
+        # Configure LED1 to follow WM1
+        set_led_follow("LED1", "WM1")
+        
+        # Create default PULSE pattern for WM1
+        default_pattern = PatternConfig(
+            mode="PULSE",
+            period_s=6.0,
+            on_ratio=0.5,
+            phase_deg=0.0,
+            min_intensity=0.0,
+            max_intensity=1.0
+        )
+        pattern_registry.create_pattern("WM1", default_pattern)
+        
+        # Start hardware scheduler (20Hz real-time loop)
+        start_hw_scheduler()
+        logger.info(f"Hardware control started ({hw_registry.mode} mode)")
         
         logger.info("Reef Controller startup complete!")
         
