@@ -64,21 +64,29 @@ class AutomationService:
                     if task_dt <= now:
                         task_dt += timedelta(days=1)
                 else:
-                    # With day filter, find next matching weekday
+                    # With day filter, prioritize tasks that haven't passed today
                     # Python weekday(): Monday=0, Sunday=6 (matches our filter format)
-                    found = False
-                    for days_ahead in range(8):  # Check up to 7 days ahead
-                        candidate = task_dt + timedelta(days=days_ahead)
-                        candidate_weekday = candidate.weekday()
-                        
-                        # Check if this day matches the filter AND is in the future
-                        if candidate_weekday in days_filter and candidate > now:
-                            task_dt = candidate
-                            found = True
-                            break
+                    current_weekday = now.weekday()
                     
-                    if not found:
-                        continue  # Skip this task if no valid occurrence found
+                    # If time is still in the future TODAY and today matches the filter, use it
+                    if task_dt > now and current_weekday in days_filter:
+                        # Task is scheduled for later today and today matches filter - use it!
+                        pass  # task_dt already set correctly for today
+                    else:
+                        # Time has passed today or today doesn't match filter - find next matching day
+                        found = False
+                        for days_ahead in range(1, 8):  # Check 1-7 days ahead (skip today, already checked)
+                            candidate = task_dt + timedelta(days=days_ahead)
+                            candidate_weekday = candidate.weekday()
+                            
+                            # Check if this day matches the filter
+                            if candidate_weekday in days_filter:
+                                task_dt = candidate
+                                found = True
+                                break
+                        
+                        if not found:
+                            continue  # Skip this task if no valid occurrence found
                 
                 eta_minutes = int((task_dt - now).total_seconds() / 60)
                 

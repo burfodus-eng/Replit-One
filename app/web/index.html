@@ -2639,8 +2639,7 @@
         for (let day = 0; day < 7; day++) {
           const tasksAtThisTime = allScheduledTasks.filter(task => {
             const taskHour = parseInt(task.time.split(':')[0]);
-            const taskMinute = parseInt(task.time.split(':')[1]);
-            const matchesHour = taskHour === hour && taskMinute === 0;
+            const matchesHour = taskHour === hour;
             const matchesDay = !task.days_of_week || task.days_of_week.length === 0 || task.days_of_week.includes(day);
             return matchesHour && matchesDay;
           });
