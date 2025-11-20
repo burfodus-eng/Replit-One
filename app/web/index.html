@@ -2354,11 +2354,27 @@
     let allScheduledTasks = [];
     let selectedTaskId = null;
     
-    async function openScheduler() {
+    async function openScheduler(prefilledTime = null, prefilledDayOfWeek = null) {
       document.getElementById('schedulerModal').classList.add('active');
       await loadPresetsForScheduler();
       await loadAllScheduledTasks();
-      createNewScheduledTask();
+      
+      if (prefilledTime !== null) {
+        selectedTaskId = null;
+        document.getElementById('schedulerTitle').textContent = 'New Scheduled Task';
+        document.getElementById('taskName').value = '';
+        document.getElementById('taskTime').value = prefilledTime;
+        document.getElementById('taskEnabled').checked = true;
+        document.getElementById('deleteTaskBtn').disabled = true;
+        
+        for (let i = 0; i < 7; i++) {
+          document.getElementById(`day-${i}`).checked = (prefilledDayOfWeek !== null && i === prefilledDayOfWeek);
+        }
+        
+        renderScheduledTasksList();
+      } else {
+        createNewScheduledTask();
+      }
     }
     
     function closeScheduler() {
@@ -2464,13 +2480,17 @@
     }
 
     async function saveScheduledTask() {
+      console.log('[Scheduler] saveScheduledTask called');
       const name = document.getElementById('taskName').value.trim();
       const time = document.getElementById('taskTime').value;
       const presetId = parseInt(document.getElementById('taskPreset').value);
       const enabled = document.getElementById('taskEnabled').checked;
       const taskType = 'preset_activation';
       
+      console.log('[Scheduler] Form values:', { name, time, presetId, enabled });
+      
       if (!name || !time || !presetId) {
+        console.log('[Scheduler] Validation failed - missing required fields');
         showToast('Please fill in all required fields', 'error');
         return;
       }
@@ -2502,6 +2522,7 @@
       };
       
       try {
+        console.log('[Scheduler] Sending request:', selectedTaskId ? 'PUT' : 'POST', taskData);
         let response;
         if (selectedTaskId) {
           response = await fetch(`/api/automation/scheduled/${selectedTaskId}`, {
@@ -2517,12 +2538,16 @@
           });
         }
         
+        console.log('[Scheduler] Response status:', response.status);
+        
         if (!response.ok) {
           const error = await response.json();
+          console.log('[Scheduler] Error response:', error);
           showToast(error.detail || 'Failed to save task', 'error');
           return;
         }
         
+        console.log('[Scheduler] Task saved successfully');
         showToast(selectedTaskId ? 'Task updated successfully' : 'Task created successfully', 'success');
         await loadAllScheduledTasks();
         await loadTasks();
@@ -2534,7 +2559,7 @@
         
         closeScheduler();  // Close modal after successful save
       } catch (err) {
-        console.error('Failed to save scheduled task:', err);
+        console.error('[Scheduler] Failed to save scheduled task:', err);
         showToast('Failed to save task', 'error');
       }
     }
@@ -2617,19 +2642,9 @@
     }
 
     function handleCalendarCellClickFull(hour, dayOfWeek) {
+      const timeString = `${hour.toString().padStart(2, '0')}:00`;
       closeCalendar();
-      openScheduler();
-      
-      // Wait for modal to render before setting values
-      setTimeout(() => {
-        const timeString = `${hour.toString().padStart(2, '0')}:00`;
-        document.getElementById('taskTime').value = timeString;
-        
-        const checkbox = document.getElementById(`day-${dayOfWeek}`);
-        if (checkbox) {
-          checkbox.checked = true;
-        }
-      }, 100);
+      openScheduler(timeString, dayOfWeek);
     }
 
     function handleTaskClickFromCalendar(taskId) {
