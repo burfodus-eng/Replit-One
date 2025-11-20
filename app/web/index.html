@@ -1583,10 +1583,14 @@
 
     async function loadTasks() {
       try {
+        console.log('[Tasks] Loading tasks...');
         const [completed, upcoming] = await Promise.all([
           fetch('/api/automation/tasks/completed').then(r => r.json()),
           fetch('/api/automation/tasks/upcoming').then(r => r.json())
         ]);
+        
+        console.log('[Tasks] Loaded completed:', completed.length, 'upcoming:', upcoming.length);
+        console.log('[Tasks] Upcoming tasks:', upcoming);
         
         document.getElementById('completedTasks').innerHTML = completed.slice(0, 5).map(task => `
           <div class="task-item completed">
@@ -2384,11 +2388,13 @@
     
     async function loadAllScheduledTasks() {
       try {
+        console.log('[Scheduler] Loading all scheduled tasks...');
         const res = await fetch('/api/automation/scheduled');
         allScheduledTasks = await res.json();
+        console.log('[Scheduler] Loaded', allScheduledTasks.length, 'scheduled tasks:', allScheduledTasks);
         renderScheduledTasksList();
       } catch (err) {
-        console.error('Failed to load scheduled tasks:', err);
+        console.error('[Scheduler] Failed to load scheduled tasks:', err);
       }
     }
     
