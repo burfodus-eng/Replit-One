@@ -2620,13 +2620,16 @@
       closeCalendar();
       openScheduler();
       
-      const timeString = `${hour.toString().padStart(2, '0')}:00`;
-      document.getElementById('taskTime').value = timeString;
-      
-      const checkbox = document.getElementById(`day-${dayOfWeek}`);
-      if (checkbox) {
-        checkbox.checked = true;
-      }
+      // Wait for modal to render before setting values
+      setTimeout(() => {
+        const timeString = `${hour.toString().padStart(2, '0')}:00`;
+        document.getElementById('taskTime').value = timeString;
+        
+        const checkbox = document.getElementById(`day-${dayOfWeek}`);
+        if (checkbox) {
+          checkbox.checked = true;
+        }
+      }, 100);
     }
 
     function handleTaskClickFromCalendar(taskId) {
