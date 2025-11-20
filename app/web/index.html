@@ -2480,7 +2480,7 @@
     }
 
     async function saveScheduledTask() {
-      console.log('[Scheduler] saveScheduledTask called');
+      console.log('[Scheduler] saveScheduledTask called, selectedTaskId:', selectedTaskId);
       const name = document.getElementById('taskName').value.trim();
       const time = document.getElementById('taskTime').value;
       const presetId = parseInt(document.getElementById('taskPreset').value);
@@ -2490,7 +2490,7 @@
       console.log('[Scheduler] Form values:', { name, time, presetId, enabled });
       
       if (!name || !time || !presetId) {
-        console.log('[Scheduler] Validation failed - missing required fields');
+        console.log('[Scheduler] Validation failed - missing required fields:', { name: !!name, time: !!time, presetId: !!presetId });
         showToast('Please fill in all required fields', 'error');
         return;
       }
@@ -2501,9 +2501,11 @@
           daysOfWeek.push(i);
         }
       }
+      console.log('[Scheduler] Days of week:', daysOfWeek);
       
       if (enabled) {
         const conflicts = checkScheduleConflict(time, daysOfWeek.length > 0 ? daysOfWeek : null, taskType, selectedTaskId);
+        console.log('[Scheduler] Conflict check:', conflicts.length > 0 ? conflicts : 'No conflicts');
         if (conflicts.length > 0) {
           const conflictNames = conflicts.map(c => c.name).join(', ');
           const dayText = daysOfWeek.length > 0 ? 'on selected days' : 'every day';
@@ -2522,7 +2524,9 @@
       };
       
       try {
-        console.log('[Scheduler] Sending request:', selectedTaskId ? 'PUT' : 'POST', taskData);
+        console.log('[Scheduler] Full payload:', JSON.stringify(taskData, null, 2));
+        console.log('[Scheduler] Sending request:', selectedTaskId ? `PUT /api/automation/scheduled/${selectedTaskId}` : 'POST /api/automation/scheduled');
+        
         let response;
         if (selectedTaskId) {
           response = await fetch(`/api/automation/scheduled/${selectedTaskId}`, {
@@ -2538,16 +2542,25 @@
           });
         }
         
-        console.log('[Scheduler] Response status:', response.status);
+        console.log('[Scheduler] Response status:', response.status, response.statusText);
         
         if (!response.ok) {
-          const error = await response.json();
-          console.log('[Scheduler] Error response:', error);
-          showToast(error.detail || 'Failed to save task', 'error');
+          let errorDetail;
+          try {
+            const errorJson = await response.json();
+            errorDetail = errorJson.detail || errorJson.message || JSON.stringify(errorJson);
+            console.error('[Scheduler] Error response body:', errorJson);
+          } catch (e) {
+            const errorText = await response.text();
+            errorDetail = errorText;
+            console.error('[Scheduler] Error response text:', errorText);
+          }
+          showToast(errorDetail || 'Failed to save task', 'error');
           return;
         }
         
-        console.log('[Scheduler] Task saved successfully');
+        const savedTask = await response.json();
+        console.log('[Scheduler] Task saved successfully:', savedTask);
         showToast(selectedTaskId ? 'Task updated successfully' : 'Task created successfully', 'success');
         await loadAllScheduledTasks();
         await loadTasks();
@@ -2559,7 +2572,8 @@
         
         closeScheduler();  // Close modal after successful save
       } catch (err) {
-        console.error('[Scheduler] Failed to save scheduled task:', err);
+        console.error('[Scheduler] Exception during save:', err);
+        console.error('[Scheduler] Error details:', { name: err.name, message: err.message, stack: err.stack });
         showToast('Failed to save task', 'error');
       }
     }
