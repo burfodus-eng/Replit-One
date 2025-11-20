@@ -113,9 +113,9 @@ class JobScheduler:
                 self.wavemaker_manager.sample_all_power()
         
         if self.automation:
-            @self.sched.scheduled_job("interval", seconds=60)
+            @self.sched.scheduled_job("interval", seconds=30)
             def automation_task_check():
-                """1-minute interval task execution check"""
+                """30-second interval task execution check"""
                 self.automation.check_and_execute_tasks()
             
             @self.sched.scheduled_job("interval", seconds=1)

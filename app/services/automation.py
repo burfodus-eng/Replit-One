@@ -161,13 +161,13 @@ class AutomationService:
         
         tasks = self.store.get_all_scheduled_tasks()
         now = datetime.now()
-        current_time = now.strftime("%H:%M")
         today = now.weekday()
         
         for task in tasks:
             if not task.enabled:
                 continue
             
+            # Check day of week filter
             if task.days_of_week:
                 try:
                     days = json.loads(task.days_of_week) if isinstance(task.days_of_week, str) else task.days_of_week
@@ -176,20 +176,122 @@ class AutomationService:
                 except:
                     pass
             
-            task_key = f"{task.id}_{task.time}"
-            last_exec = self.last_executed_tasks.get(task_key)
-            
-            if last_exec and (now - last_exec).total_seconds() < 60:
+            # Parse task time and create datetime for comparison
+            try:
+                task_hour, task_min = task.time.split(':')
+                task_datetime = now.replace(hour=int(task_hour), minute=int(task_min), second=0, microsecond=0)
+            except:
                 continue
             
-            if task.time == current_time:
+            # Check if we're within ±30 seconds of the scheduled time (use absolute time comparison)
+            time_diff_seconds = abs((now - task_datetime).total_seconds())
+            
+            # Allow execution if within 30 seconds window
+            if time_diff_seconds <= 30:
+                # Prevent duplicate execution (only run once per minute)
+                task_key = f"{task.id}_{task.time}"
+                last_exec = self.last_executed_tasks.get(task_key)
+                
+                if last_exec and (now - last_exec).total_seconds() < 60:
+                    print(f"[Automation] ⊘ SKIPPED: '{task.name}' at {task.time} - already executed {int((now - last_exec).total_seconds())}s ago")
+                    continue
+                
+                print(f"[Automation] → TRIGGERING: '{task.name}' scheduled for {task.time} (current: {now.strftime('%H:%M:%S')})")
                 self._execute_task(task)
                 self.last_executed_tasks[task_key] = now
     
     def _execute_task(self, task):
+        """Execute a scheduled task"""
         if task.task_type == "preset_activation" and task.preset_id:
             try:
+                # Get preset details for logging
+                preset = self.store.get_preset_by_id(task.preset_id)
+                preset_name = preset.name if preset else f"ID {task.preset_id}"
+                
                 self.preset_manager.set_active_preset(task.preset_id)
-                print(f"[Automation] Activated preset {task.preset_id} for task '{task.name}'")
+                print(f"[Automation] ✓ EXECUTED: '{task.name}' at {task.time} - activated preset '{preset_name}' (ID: {task.preset_id})")
             except Exception as e:
-                print(f"[Automation] Failed to execute task {task.name}: {e}")
+                print(f"[Automation] ✗ FAILED: task '{task.name}' - {e}")
+    
+    def auto_resume_from_schedule(self):
+        """Find and activate the preset that should be active right now based on schedule"""
+        if not self.store or not self.preset_manager:
+            print("[Automation] Auto-resume skipped - store or preset_manager not available")
+            return
+        
+        tasks = self.store.get_all_scheduled_tasks()
+        if not tasks:
+            print("[Automation] No scheduled tasks found for auto-resume")
+            return
+        
+        now = datetime.now()
+        
+        # Build a list of all task occurrences with their actual datetime (including day of week filter)
+        task_occurrences = []
+        for task in tasks:
+            if not task.enabled or task.task_type != "preset_activation":
+                continue
+            
+            # Parse task time
+            try:
+                task_hour, task_min = task.time.split(':')
+            except:
+                continue
+            
+            # Check day of week filter
+            applicable_days = None
+            if task.days_of_week:
+                try:
+                    applicable_days = json.loads(task.days_of_week) if isinstance(task.days_of_week, str) else task.days_of_week
+                except:
+                    applicable_days = None
+            
+            # If no day filter, task runs every day - check today and yesterday
+            # If has day filter, only check days it applies to
+            days_to_check = []
+            if applicable_days is None:
+                # No filter - check last 7 days to find most recent occurrence
+                days_to_check = list(range(7))
+            else:
+                # Has filter - only check days where this task runs, going back up to 7 days
+                for days_back in range(7):
+                    check_date = now - timedelta(days=days_back)
+                    if check_date.weekday() in applicable_days:
+                        days_to_check.append(days_back)
+            
+            # Create datetime for each applicable occurrence
+            for days_back in days_to_check:
+                task_datetime = (now - timedelta(days=days_back)).replace(
+                    hour=int(task_hour), 
+                    minute=int(task_min), 
+                    second=0, 
+                    microsecond=0
+                )
+                
+                # Only consider if it's in the past
+                if task_datetime <= now:
+                    task_occurrences.append({
+                        'task': task,
+                        'datetime': task_datetime
+                    })
+        
+        if not task_occurrences:
+            print("[Automation] No past task occurrences found for auto-resume")
+            return
+        
+        # Sort by datetime and get the most recent
+        task_occurrences.sort(key=lambda x: x['datetime'], reverse=True)
+        most_recent = task_occurrences[0]
+        
+        # Activate the preset
+        task = most_recent['task']
+        if task.preset_id:
+            try:
+                self.preset_manager.set_active_preset(task.preset_id)
+                time_ago = now - most_recent['datetime']
+                hours_ago = int(time_ago.total_seconds() / 3600)
+                print(f"[Automation] Auto-resumed: activated preset {task.preset_id} for task '{task.name}' (scheduled {hours_ago}h ago at {task.time})")
+            except Exception as e:
+                print(f"[Automation] Failed to auto-resume task {task.name}: {e}")
+        else:
+            print("[Automation] No suitable task found for auto-resume")

@@ -156,6 +156,10 @@ async def startup():
         start_hw_scheduler()
         logger.info(f"Hardware control started ({hw_registry.mode} mode)")
         
+        # Auto-resume wavemakers based on current schedule
+        logger.info("Auto-resuming wavemakers from schedule...")
+        app.state.automation.auto_resume_from_schedule()
+        
         logger.info("Reef Controller startup complete!")
         
     except Exception as e:
