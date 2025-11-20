@@ -2526,6 +2526,12 @@
         showToast(selectedTaskId ? 'Task updated successfully' : 'Task created successfully', 'success');
         await loadAllScheduledTasks();
         await loadTasks();
+        
+        // Refresh calendar if it's open
+        if (document.getElementById('calendarModal').classList.contains('active')) {
+          renderCalendarFull();
+        }
+        
         closeScheduler();  // Close modal after successful save
       } catch (err) {
         console.error('Failed to save scheduled task:', err);
@@ -2546,6 +2552,12 @@
         selectedTaskId = null;
         await loadAllScheduledTasks();
         await loadTasks();
+        
+        // Refresh calendar if it's open
+        if (document.getElementById('calendarModal').classList.contains('active')) {
+          renderCalendarFull();
+        }
+        
         createNewScheduledTask();
       } catch (err) {
         console.error('Failed to delete scheduled task:', err);

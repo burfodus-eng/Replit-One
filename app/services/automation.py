@@ -50,10 +50,35 @@ class AutomationService:
             
             try:
                 task_hour, task_min = task.time.split(':')
+                
+                # Parse day-of-week filter if present
+                days_filter = None
+                if task.days_of_week:
+                    days_filter = json.loads(task.days_of_week) if isinstance(task.days_of_week, str) else task.days_of_week
+                
+                # Find next occurrence
                 task_dt = now.replace(hour=int(task_hour), minute=int(task_min), second=0, microsecond=0)
                 
-                if task_dt < now:
-                    task_dt += timedelta(days=1)
+                # If no day filter, simple logic: if time passed today, use tomorrow
+                if not days_filter or len(days_filter) == 0:
+                    if task_dt <= now:
+                        task_dt += timedelta(days=1)
+                else:
+                    # With day filter, find next matching weekday
+                    # Python weekday(): Monday=0, Sunday=6 (matches our filter format)
+                    found = False
+                    for days_ahead in range(8):  # Check up to 7 days ahead
+                        candidate = task_dt + timedelta(days=days_ahead)
+                        candidate_weekday = candidate.weekday()
+                        
+                        # Check if this day matches the filter AND is in the future
+                        if candidate_weekday in days_filter and candidate > now:
+                            task_dt = candidate
+                            found = True
+                            break
+                    
+                    if not found:
+                        continue  # Skip this task if no valid occurrence found
                 
                 eta_minutes = int((task_dt - now).total_seconds() / 60)
                 
@@ -65,7 +90,8 @@ class AutomationService:
                     "type": task.task_type,
                     "preset_id": task.preset_id
                 })
-            except:
+            except Exception as e:
+                print(f"[Automation] Error calculating upcoming task for {task.name}: {e}")
                 continue
         
         upcoming.sort(key=lambda x: x["eta_minutes"])
