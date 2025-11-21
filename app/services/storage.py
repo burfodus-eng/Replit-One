@@ -34,6 +34,19 @@ class ScheduledTaskRow(SQLModel, table=True):
     days_of_week: Optional[str] = None
 
 
+class DeviceConfigRow(SQLModel, table=True):
+    device_id: str = Field(primary_key=True)
+    name: str
+    device_type: str
+    gpio_pin: int
+    pwm_freq_hz: int
+    min_intensity: float = 0.0
+    max_intensity: float = 1.0
+    volts_min: float = 0.0
+    volts_max: float = 5.0
+    follow_device_id: Optional[str] = None
+
+
 def make_db(db_url: str):
     engine = create_engine(db_url)
     SQLModel.metadata.create_all(engine)
@@ -162,5 +175,44 @@ class Store:
             if not task:
                 return False
             s.delete(task)
+            s.commit()
+            return True
+    
+    def get_all_device_configs(self) -> List[DeviceConfigRow]:
+        with Session(self.engine) as s:
+            statement = select(DeviceConfigRow).order_by(DeviceConfigRow.device_id)
+            results = s.exec(statement).all()
+            return list(results)
+    
+    def get_device_config(self, device_id: str) -> Optional[DeviceConfigRow]:
+        with Session(self.engine) as s:
+            return s.get(DeviceConfigRow, device_id)
+    
+    def create_device_config(self, device: DeviceConfigRow) -> DeviceConfigRow:
+        with Session(self.engine) as s:
+            s.add(device)
+            s.commit()
+            s.refresh(device)
+            return device
+    
+    def update_device_config(self, device_id: str, **kwargs) -> Optional[DeviceConfigRow]:
+        with Session(self.engine) as s:
+            device = s.get(DeviceConfigRow, device_id)
+            if not device:
+                return None
+            for key, value in kwargs.items():
+                if hasattr(device, key):
+                    setattr(device, key, value)
+            s.add(device)
+            s.commit()
+            s.refresh(device)
+            return device
+    
+    def delete_device_config(self, device_id: str) -> bool:
+        with Session(self.engine) as s:
+            device = s.get(DeviceConfigRow, device_id)
+            if not device:
+                return False
+            s.delete(device)
             s.commit()
             return True

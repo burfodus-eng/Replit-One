@@ -14,7 +14,7 @@ from .services.events import EventsService
 from .services.power_allocator import PowerAllocator
 from .services.wavemaker_manager import WavemakerManager
 from .services.preset_manager import PresetManager
-from .routers import telemetry, control, config_api, automation, arrays, history, wavemakers, presets, hardware
+from .routers import telemetry, control, config_api, automation, arrays, history, wavemakers, presets, hardware, settings
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -44,6 +44,7 @@ app.include_router(history.router)
 app.include_router(wavemakers.router, prefix='/api')
 app.include_router(presets.router, prefix='/api')
 app.include_router(hardware.router, prefix='/api')
+app.include_router(settings.router)
 
 
 @app.on_event('startup')
@@ -114,33 +115,66 @@ async def startup():
         from .services.hw_devices import registry as hw_registry, DeviceConfig
         from .services.hw_patterns import pattern_registry, PatternConfig
         from .hw_scheduler.realtime_loop import start_hw_scheduler, set_led_follow, set_preset_manager
+        from .services.storage import DeviceConfigRow
         
-        # Initialize WM1 (Wavemaker Channel 1) on GPIO18
-        wm1_config = DeviceConfig(
-            name="Wavemaker CH1",
-            gpio_pin=18,
-            pwm_freq_hz=200,
-            min_intensity=0.05,  # Avoid full stop
-            max_intensity=1.0,
-            volts_min=0.0,
-            volts_max=0.6
-        )
-        hw_registry.register_wavemaker("WM1", wm1_config)
+        # Load all device configurations from database
+        device_configs = app.state.store.get_all_device_configs()
         
-        # Initialize LED1 on GPIO19 to mirror WM1
-        led1_config = DeviceConfig(
-            name="LED CH1",
-            gpio_pin=19,
-            pwm_freq_hz=800,
-            min_intensity=0.0,
-            max_intensity=1.0,
-            volts_min=0.0,
-            volts_max=5.0
-        )
-        hw_registry.register_led("LED1", led1_config)
+        # If no devices in database, create defaults and save them
+        if not device_configs:
+            logger.info("No device configurations found, creating defaults...")
+            default_wm1 = DeviceConfigRow(
+                device_id="WM1",
+                name="Wavemaker CH1",
+                device_type="WAVEMAKER",
+                gpio_pin=18,
+                pwm_freq_hz=200,
+                min_intensity=0.05,
+                max_intensity=1.0,
+                volts_min=0.0,
+                volts_max=0.6
+            )
+            default_led1 = DeviceConfigRow(
+                device_id="LED1",
+                name="LED CH1",
+                device_type="LED",
+                gpio_pin=19,
+                pwm_freq_hz=800,
+                min_intensity=0.0,
+                max_intensity=1.0,
+                volts_min=0.0,
+                volts_max=5.0,
+                follow_device_id="WM1"
+            )
+            app.state.store.create_device_config(default_wm1)
+            app.state.store.create_device_config(default_led1)
+            device_configs = [default_wm1, default_led1]
+            logger.info("Created default device configurations")
         
-        # Configure LED1 to follow WM1
-        set_led_follow("LED1", "WM1")
+        # Register all devices from database
+        for device in device_configs:
+            device_config = DeviceConfig(
+                name=device.name,
+                gpio_pin=device.gpio_pin,
+                pwm_freq_hz=device.pwm_freq_hz,
+                min_intensity=device.min_intensity,
+                max_intensity=device.max_intensity,
+                volts_min=device.volts_min,
+                volts_max=device.volts_max
+            )
+            
+            if device.device_type == "WAVEMAKER":
+                hw_registry.register_wavemaker(device.device_id, device_config)
+                logger.info(f"Registered wavemaker: {device.device_id} on GPIO{device.gpio_pin}")
+            elif device.device_type == "LED":
+                hw_registry.register_led(device.device_id, device_config)
+                logger.info(f"Registered LED: {device.device_id} on GPIO{device.gpio_pin}")
+        
+        # Configure LED following relationships
+        for device in device_configs:
+            if device.device_type == "LED" and device.follow_device_id:
+                set_led_follow(device.device_id, device.follow_device_id)
+                logger.info(f"Configured {device.device_id} to follow {device.follow_device_id}")
         
         # Create default PULSE pattern for WM1 (fallback when no preset active)
         default_pattern = PatternConfig(
