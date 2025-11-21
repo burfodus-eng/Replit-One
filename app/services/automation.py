@@ -33,7 +33,12 @@ class AutomationService:
     def get_completed_tasks(self) -> List[Dict]:
         return self.completed_tasks
     
-    def get_upcoming_tasks(self) -> List[Dict]:
+    def get_upcoming_tasks(self, user_tz_offset_minutes: int = 0) -> List[Dict]:
+        """Get upcoming tasks with timezone support.
+        
+        Args:
+            user_tz_offset_minutes: User's timezone offset from UTC in minutes (e.g., +660 for AEDT/UTC+11)
+        """
         if not self.store:
             return [
                 {"name": "Evening Feeding", "time": "06:00 PM", "eta_minutes": 45},
@@ -41,7 +46,12 @@ class AutomationService:
             ]
         
         tasks = self.store.get_all_scheduled_tasks()
-        now = datetime.now()
+        # Get current time in UTC
+        now_utc = datetime.utcnow()
+        # Convert to user's timezone
+        user_offset = timedelta(minutes=user_tz_offset_minutes)
+        now_user = now_utc + user_offset
+        
         upcoming = []
         
         for task in tasks:
@@ -56,20 +66,20 @@ class AutomationService:
                 if task.days_of_week:
                     days_filter = json.loads(task.days_of_week) if isinstance(task.days_of_week, str) else task.days_of_week
                 
-                # Find next occurrence
-                task_dt = now.replace(hour=int(task_hour), minute=int(task_min), second=0, microsecond=0)
+                # Find next occurrence IN USER'S TIMEZONE
+                task_dt = now_user.replace(hour=int(task_hour), minute=int(task_min), second=0, microsecond=0)
                 
                 # If no day filter, simple logic: if time passed today, use tomorrow
                 if not days_filter or len(days_filter) == 0:
-                    if task_dt <= now:
+                    if task_dt <= now_user:
                         task_dt += timedelta(days=1)
                 else:
                     # With day filter, prioritize tasks that haven't passed today
                     # Python weekday(): Monday=0, Sunday=6 (matches our filter format)
-                    current_weekday = now.weekday()
+                    current_weekday = now_user.weekday()
                     
                     # If time is still in the future TODAY and today matches the filter, use it
-                    if task_dt > now and current_weekday in days_filter:
+                    if task_dt > now_user and current_weekday in days_filter:
                         # Task is scheduled for later today and today matches filter - use it!
                         pass  # task_dt already set correctly for today
                     else:
@@ -88,7 +98,7 @@ class AutomationService:
                         if not found:
                             continue  # Skip this task if no valid occurrence found
                 
-                eta_minutes = int((task_dt - now).total_seconds() / 60)
+                eta_minutes = int((task_dt - now_user).total_seconds() / 60)
                 
                 upcoming.append({
                     "id": task.id,

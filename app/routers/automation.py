@@ -19,9 +19,14 @@ async def get_completed_tasks(request: Request):
 
 
 @router.get("/automation/tasks/upcoming")
-async def get_upcoming_tasks(request: Request):
+async def get_upcoming_tasks(request: Request, tz_offset: int = 0):
+    """Get upcoming tasks with timezone support.
+    
+    Args:
+        tz_offset: User's timezone offset from UTC in minutes (e.g., +660 for AEDT/UTC+11)
+    """
     automation = request.app.state.automation
-    return automation.get_upcoming_tasks()
+    return automation.get_upcoming_tasks(user_tz_offset_minutes=tz_offset)
 
 
 @router.get("/automation/wave-modes")

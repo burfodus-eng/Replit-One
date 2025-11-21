@@ -1581,12 +1581,20 @@
       selectTaskForEditing(taskId);
     }
 
+    function getUserTimezoneOffset() {
+      // Get timezone offset in minutes (e.g., +660 for AEDT/UTC+11)
+      // JavaScript returns negative values for positive offsets, so we negate it
+      return -new Date().getTimezoneOffset();
+    }
+
     async function loadTasks() {
       try {
         console.log('[Tasks] Loading tasks...');
+        const tzOffset = getUserTimezoneOffset();
+        console.log('[Tasks] Timezone offset:', tzOffset, 'minutes');
         const [completed, upcoming] = await Promise.all([
           fetch('/api/automation/tasks/completed').then(r => r.json()),
-          fetch('/api/automation/tasks/upcoming').then(r => r.json())
+          fetch(`/api/automation/tasks/upcoming?tz_offset=${tzOffset}`).then(r => r.json())
         ]);
         
         console.log('[Tasks] Loaded completed:', completed.length, 'upcoming:', upcoming.length);
