@@ -4,10 +4,17 @@ import json
 
 
 class AutomationService:
-    def __init__(self, store=None, preset_manager=None):
+    def __init__(self, store=None, preset_manager=None, timezone_offset_minutes=None):
         self.store = store
         self.preset_manager = preset_manager
         self.last_executed_tasks = {}
+        # Timezone offset from UTC in minutes (e.g., +660 for AEDT/UTC+11)
+        # Can be configured via USER_TZ_OFFSET environment variable
+        import os
+        if timezone_offset_minutes is not None:
+            self.timezone_offset_minutes = timezone_offset_minutes
+        else:
+            self.timezone_offset_minutes = int(os.getenv('USER_TZ_OFFSET', '0'))
         
         self.feed_mode_active = False
         self.feed_mode_start_time = None
@@ -143,7 +150,7 @@ class AutomationService:
         
         self.preset_manager.set_active_preset(feed_preset.id)
         self.feed_mode_active = True
-        self.feed_mode_start_time = datetime.now()
+        self.feed_mode_start_time = datetime.utcnow()  # Use UTC for consistent timezone handling
         
         print(f"[Feed Mode] Started - previous preset: {self.preset_before_feed}")
         return {"success": True, "message": "Feed mode activated"}
@@ -156,7 +163,8 @@ class AutomationService:
                 "duration_minutes": self.feed_mode_duration_minutes
             }
         
-        elapsed = (datetime.now() - self.feed_mode_start_time).total_seconds()
+        # Use UTC for consistent timezone handling
+        elapsed = (datetime.utcnow() - self.feed_mode_start_time).total_seconds()
         total_seconds = self.feed_mode_duration_minutes * 60
         remaining = max(0, total_seconds - elapsed)
         
@@ -189,7 +197,9 @@ class AutomationService:
         if not self.feed_mode_active or not self.feed_mode_start_time:
             return
         
-        elapsed = (datetime.now() - self.feed_mode_start_time).total_seconds()
+        # Use UTC for feed mode timing (timezone-independent)
+        now_utc = datetime.utcnow()
+        elapsed = (now_utc - self.feed_mode_start_time).total_seconds()
         duration_seconds = self.feed_mode_duration_minutes * 60
         
         if elapsed >= duration_seconds:
@@ -204,7 +214,9 @@ class AutomationService:
             return
         
         tasks = self.store.get_all_scheduled_tasks()
-        now = datetime.now()
+        # Use user's timezone for task execution
+        now_utc = datetime.utcnow()
+        now = now_utc + timedelta(minutes=self.timezone_offset_minutes)
         today = now.weekday()
         
         for task in tasks:
@@ -268,7 +280,9 @@ class AutomationService:
             print("[Automation] No scheduled tasks found for auto-resume")
             return
         
-        now = datetime.now()
+        # Use user's timezone for auto-resume
+        now_utc = datetime.utcnow()
+        now = now_utc + timedelta(minutes=self.timezone_offset_minutes)
         
         # Build a list of all task occurrences with their actual datetime (including day of week filter)
         task_occurrences = []
