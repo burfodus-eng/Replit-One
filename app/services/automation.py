@@ -4,17 +4,13 @@ import json
 
 
 class AutomationService:
-    def __init__(self, store=None, preset_manager=None, timezone_offset_minutes=None):
+    def __init__(self, store=None, preset_manager=None, timezone_offset_minutes=0):
         self.store = store
         self.preset_manager = preset_manager
         self.last_executed_tasks = {}
-        # Timezone offset from UTC in minutes (e.g., +660 for AEDT/UTC+11)
-        # Can be configured via USER_TZ_OFFSET environment variable
-        import os
-        if timezone_offset_minutes is not None:
-            self.timezone_offset_minutes = timezone_offset_minutes
-        else:
-            self.timezone_offset_minutes = int(os.getenv('USER_TZ_OFFSET', '0'))
+        # Timezone offset from UTC in minutes (e.g., +600 for AEST/UTC+10, +660 for AEDT/UTC+11)
+        # Defaults to 0 (UTC) - frontend detects browser timezone automatically
+        self.timezone_offset_minutes = timezone_offset_minutes
         
         self.feed_mode_active = False
         self.feed_mode_start_time = None

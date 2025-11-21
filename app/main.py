@@ -87,9 +87,13 @@ async def startup():
         app.state.wavemaker_manager.set_preset_manager(app.state.preset_manager)
         
         logger.info("Initializing automation service...")
+        # Get timezone offset from environment (should match browser's detected timezone)
+        user_tz_offset = int(os.getenv('USER_TZ_OFFSET', '0'))
+        logger.info(f"User timezone offset: {user_tz_offset} minutes (UTC{'+' if user_tz_offset >= 0 else ''}{user_tz_offset//60})")
         app.state.automation = AutomationService(
             store=app.state.store,
-            preset_manager=app.state.preset_manager
+            preset_manager=app.state.preset_manager,
+            timezone_offset_minutes=user_tz_offset
         )
         
         logger.info("Creating initial snapshot...")
