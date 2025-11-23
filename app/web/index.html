@@ -823,7 +823,7 @@
 
     .hardware-table-header {
       display: grid;
-      grid-template-columns: 180px 100px 140px 180px 180px 140px;
+      grid-template-columns: 180px 100px 140px 180px 180px minmax(220px, 1fr);
       gap: 12px;
       padding: 16px 20px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -836,7 +836,7 @@
 
     .hardware-table-row {
       display: grid;
-      grid-template-columns: 180px 100px 140px 180px 180px 140px;
+      grid-template-columns: 180px 100px 140px 180px 180px minmax(220px, 1fr);
       gap: 12px;
       padding: 20px;
       border-bottom: 1px solid #e2e8f0;
@@ -921,7 +921,6 @@
     .hw-col-actions {
       gap: 8px;
       justify-content: flex-end;
-      flex-wrap: wrap;
     }
 
     .hw-btn {
