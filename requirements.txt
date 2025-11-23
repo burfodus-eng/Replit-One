@@ -5,3 +5,4 @@ pyyaml
 sqlmodel
 apscheduler
 websockets
+pyserial

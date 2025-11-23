@@ -1,20 +1,42 @@
 """Device registry for managing hardware PWM devices (wavemakers, LEDs)."""
 
 import logging
+import os
 from typing import Dict, Optional
 from dataclasses import dataclass
 
-try:
-    import pigpio
-    # If pigpio module exists, try to use it
-    from app.hw.pigpio_driver import PigpioPWM
-    GPIO_MODE = "HARDWARE"
-except (ImportError, RuntimeError):
-    # Pigpio not available, use mock
+# Determine GPIO driver based on HARDWARE_MODE environment variable
+HARDWARE_MODE = os.getenv("HARDWARE_MODE", "mock").lower()
+
+if HARDWARE_MODE == "esp32":
+    # ESP32 serial USB adapter
+    try:
+        from app.hw.esp32_serial import PigpioPWM
+        GPIO_MODE = "ESP32"
+        logging.info("GPIO Mode: ESP32 Serial (USB adapter)")
+    except ImportError as e:
+        logging.error(f"Failed to load ESP32 driver: {e}")
+        from app.hw.gpio_mock import PigpioPWM
+        GPIO_MODE = "MOCK (ESP32 fallback)"
+        logging.warning("Falling back to MOCK mode")
+elif HARDWARE_MODE in ("pi", "pigpio", "real"):
+    # Raspberry Pi with pigpio
+    try:
+        import pigpio
+        from app.hw.pigpio_driver import PigpioPWM
+        GPIO_MODE = "PIGPIO"
+        logging.info("GPIO Mode: PIGPIO (Raspberry Pi)")
+    except (ImportError, RuntimeError) as e:
+        logging.warning(f"Pigpio not available: {e}")
+        from app.hw.gpio_mock import PigpioPWM
+        GPIO_MODE = "MOCK (pigpio fallback)"
+else:
+    # Default to mock/simulation
     from app.hw.gpio_mock import PigpioPWM
     GPIO_MODE = "MOCK"
+    logging.info("GPIO Mode: MOCK (simulation)")
 
-logging.info(f"GPIO Mode: {GPIO_MODE}")
+logging.info(f"GPIO Driver loaded: {GPIO_MODE}")
 
 
 @dataclass
