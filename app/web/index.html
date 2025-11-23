@@ -951,6 +951,17 @@
       box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
     }
 
+    .hardware-table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    @media (max-width: 1200px) {
+      .hardware-table {
+        min-width: 1120px;
+      }
+    }
+
     @media (max-width: 1600px) {
       .main-layout {
         grid-template-columns: 1fr 350px;
@@ -1346,7 +1357,9 @@
         <button class="btn-primary" onclick="addNewDevice()">Add Device</button>
       </div>
       
-      <div id="hardwareDevicesList"></div>
+      <div class="hardware-table-wrapper">
+        <div id="hardwareDevicesList"></div>
+      </div>
       
       <div style="margin-top: 24px; padding: 16px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
         <p style="font-size: 14px; color: #4a5568; margin-bottom: 8px;"><strong>Note:</strong> Changes to GPIO pins and PWM frequencies require an application restart to take effect.</p>
