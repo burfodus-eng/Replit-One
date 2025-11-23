@@ -1274,7 +1274,7 @@
 
     <nav class="nav-menu" id="navMenu">
       <div class="nav-menu-content">
-        <button class="nav-item nav-item-active" onclick="navigateTo('dashboard')">
+        <button class="nav-item nav-item-active" onclick="navigateTo('dashboard', event)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="7" height="7"></rect>
             <rect x="14" y="3" width="7" height="7"></rect>
@@ -1283,7 +1283,7 @@
           </svg>
           <span>Dashboard</span>
         </button>
-        <button class="nav-item" onclick="navigateTo('logs')">
+        <button class="nav-item" onclick="navigateTo('logs', event)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
             <polyline points="14 2 14 8 20 8"></polyline>
@@ -1293,7 +1293,7 @@
           </svg>
           <span>Logs</span>
         </button>
-        <button class="nav-item" onclick="navigateTo('settings')">
+        <button class="nav-item" onclick="navigateTo('settings', event)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M12 1v6m0 6v6m8.66-10l-5.2 3M8.54 14l-5.2 3M23 12h-6m-6 0H5m15.66 2l-5.2-3M8.54 10l-5.2-3"></path>
@@ -1638,7 +1638,7 @@
       menu.classList.toggle('open');
     }
 
-    function navigateTo(page) {
+    function navigateTo(page, evt) {
       currentPage = page;
       const menu = document.getElementById('navMenu');
       menu.classList.remove('open');
@@ -1646,7 +1646,16 @@
       document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('nav-item-active');
       });
-      event.target.closest('.nav-item').classList.add('nav-item-active');
+      
+      if (evt && evt.target) {
+        evt.target.closest('.nav-item').classList.add('nav-item-active');
+      } else {
+        const navItems = document.querySelectorAll('.nav-item');
+        const pageIndex = page === 'dashboard' ? 0 : page === 'logs' ? 1 : page === 'settings' ? 2 : 0;
+        if (navItems.length > pageIndex) {
+          navItems[pageIndex].classList.add('nav-item-active');
+        }
+      }
       
       document.getElementById('dashboardPage').style.display = page === 'dashboard' ? 'grid' : 'none';
       document.getElementById('logsPage').style.display = page === 'logs' ? 'block' : 'none';
@@ -3578,7 +3587,7 @@
       
       updateVersion();
       
-      showPage('dashboard');
+      navigateTo('dashboard');
       
       refreshAll();
       updateInterval = setInterval(refreshAll, 2000);
