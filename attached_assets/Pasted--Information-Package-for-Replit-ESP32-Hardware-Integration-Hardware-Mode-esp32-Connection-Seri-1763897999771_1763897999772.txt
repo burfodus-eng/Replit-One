@@ -1,0 +1,151 @@
+✅ Information Package for Replit – ESP32 Hardware Integration
+
+Hardware Mode: esp32
+Connection: Serial via USB
+Board: Keyestudio KS0413 (ESP-WROOM-32 + CP2102 USB-UART)
+Serial Port: COM4
+Baud: 115200
+
+1. The exact Arduino sketch currently flashed to the ESP32
+
+This is the final working firmware that drives PWM on pins 25, 33, 32 using the new API (analogWrite() for esp32-arduino v3.3.x):
+
+// --- ESP32 Serial PWM Controller Firmware ---
+// Compatible with Arduino-esp32 core 3.3.4 (no ledcSetup required)
+
+void setup() {
+  Serial.begin(115200);
+
+  // Set output pins
+  pinMode(25, OUTPUT);
+  pinMode(33, OUTPUT);
+  pinMode(32, OUTPUT);
+
+  // Optional: startup message
+  Serial.println("ESP32 PWM Controller Ready");
+}
+
+void loop() {
+  static String input = "";
+
+  // Read incoming serial characters
+  while (Serial.available()) {
+    char c = Serial.read();
+
+    if (c == '\n' || c == '\r') {
+      if (input.length() > 0) {
+        // Expected format: "PIN:VALUE"
+        int sep = input.indexOf(':');
+        if (sep > 0) {
+          int pin = input.substring(0, sep).toInt();
+          int val = input.substring(sep + 1).toInt();
+
+          // Constrain valid PWM range (0–255)
+          val = constrain(val, 0, 255);
+
+          // Write PWM
+          analogWrite(pin, val);
+        }
+      }
+      input = "";
+    } else {
+      input += c;
+    }
+  }
+}
+
+Protocol implemented
+PIN:VALUE\n
+
+
+Examples:
+
+25:128
+33:255
+32:0
+
+2. Serial configuration (for .env)
+HARDWARE_MODE=esp32
+ESP32_SERIAL_PORT=COM4
+ESP32_SERIAL_BAUD=115200
+USER_TZ_OFFSET=600
+
+3. Pin Mapping (for Hardware Settings UI)
+Device	GPIO Pin	Type	PWM Range
+LED #1	25	PWM Output	0–255
+LED #2	33	PWM Output	0–255
+LED #3	32	PWM Output	0–255
+4. Expected Backend → ESP32 Behaviour
+
+When user adjusts intensity in the UI:
+
+UI → backend sends intensity 0–100%
+
+Backend converts:
+
+pwm = int(percent * 2.55)
+
+
+Backend sends serial command:
+
+"PIN:PWM\n"
+
+
+ESP32 receives and executes:
+
+Parses pin
+
+Parses PWM value
+
+Uses analogWrite(pin, pwm) to update the LED in real time
+
+5. Backend Driver Requirements for Replit
+
+Replit needs to implement a Python driver like:
+
+import serial
+import time
+
+class ESP32Driver:
+    def __init__(self, port="COM4", baud=115200):
+        self.ser = serial.Serial(port, baud, timeout=0.1)
+        time.sleep(2)
+
+    def set_pwm(self, pin, value):
+        cmd = f"{pin}:{value}\n"
+        self.ser.write(cmd.encode('utf-8'))
+
+
+And then map the hardware devices to use:
+
+driver.set_pwm(25, value)
+driver.set_pwm(33, value)
+driver.set_pwm(32, value)
+
+6. What’s already verified as working
+
+✔ ESP32 successfully uploads sketches via Arduino
+✔ LED control on GPIO 25, 33, 32 verified
+✔ Serial communication works
+✔ analogWrite() works under Arduino ESP32 core 3.3.4
+✔ Python serial library installed and tested
+✔ LED intensity is adjustable (not just on/off)
+
+7. What Replit must NOT use
+
+❌ Do not use ledcSetup, ledcAttachPin or the old LEDC API — your installed core removed those definitions
+❌ Do not expect I2C/PCA9685 (this hardware mode doesn’t use it)
+❌ Do not send JSON — only simple "PIN:VALUE\n"
+
+8. Optional (if they want to expand)
+
+The firmware can easily expose more pins (12, 14, 26, etc.)
+
+Can support multi-pin bulk updates in a single line:
+
+25:100;33:200;32:10
+
+
+Can return current states for GUI polling
+
+Can add handshake responses (“OK”, “ERR”, etc.)
