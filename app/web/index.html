@@ -907,8 +907,18 @@
       display: block;
     }
 
+    /* Hardware table column alignment - Updated v1.7.2 */
+    .hw-col-device,
+    .hw-col-pin,
+    .hw-col-freq,
+    .hw-col-intensity,
+    .hw-col-voltage,
     .hw-col-actions {
       display: flex;
+      align-items: center;
+    }
+
+    .hw-col-actions {
       gap: 8px;
       justify-content: flex-end;
     }
@@ -3567,6 +3577,8 @@
       setInterval(updateClock, 1000);
       
       updateVersion();
+      
+      showPage('dashboard');
       
       refreshAll();
       updateInterval = setInterval(refreshAll, 2000);
