@@ -54,10 +54,14 @@ The Reef Controller is built upon a FastAPI backend and a vanilla JavaScript fro
 - **Simulation Mode**: Comprehensive software simulation for development, including diurnal PV curves, LED load calculation, battery flow, and configurable power budgets.
 
 ### System Design Choices
-- **Hardware Abstraction Layer (HAL)**: Unifies control for simulated and real Raspberry Pi hardware (PCA9685 PWM, INA219 sensors) via `HARDWARE_MODE`.
+- **Hardware Abstraction Layer (HAL)**: Unifies control for simulated, Raspberry Pi (pigpio), and ESP32 serial USB adapter hardware via `HARDWARE_MODE` environment variable.
+  - `HARDWARE_MODE=mock`: Software simulation (default)
+  - `HARDWARE_MODE=pigpio` or `pi` or `real`: Raspberry Pi with pigpio daemon
+  - `HARDWARE_MODE=esp32`: ESP32 USB-to-GPIO adapter with serial communication
+- **ESP32 Serial Driver**: Supports USB-connected ESP32 boards (e.g., Keyestudio KS0413) using pyserial for PWM control. Protocol: `PIN:VALUE\n` format (VALUE: 0-255). Configurable via `ESP32_SERIAL_PORT` (default: COM4) and `ESP32_SERIAL_BAUD` (default: 115200).
 - **Database**: SQLite for telemetry, event persistence, and device configuration storage (`device_configs` table).
-- **Configuration**: Environment variables (`APP_PORT`, `DB_URL`, `SENSOR_DRIVER`, `GPIO_DRIVER`, `USER_TZ_OFFSET`) and `config.yaml`, with runtime device configuration persisted in database.
-- **Platform-Agnostic GPIO**: USB-to-GPIO adapter support for PC-style boards (Linux/Windows compatible), abstracting hardware control from specific board requirements.
+- **Configuration**: Environment variables (`APP_PORT`, `DB_URL`, `HARDWARE_MODE`, `ESP32_SERIAL_PORT`, `ESP32_SERIAL_BAUD`, `USER_TZ_OFFSET`) and `config.yaml`, with runtime device configuration persisted in database.
+- **Platform-Agnostic GPIO**: USB-to-GPIO adapter support (ESP32, Raspberry Pi) for PC-style boards (Linux/Windows compatible), abstracting hardware control from specific board requirements.
 - **Deployment**: Designed for Replit's autoscale deployment, emphasizing statelessness and environment-based configuration.
 
 ## External Dependencies
@@ -66,5 +70,6 @@ The Reef Controller is built upon a FastAPI backend and a vanilla JavaScript fro
 - **SQLModel**: ORM for SQLite.
 - **APScheduler**: Python library for scheduling tasks.
 - **PyYAML**: For parsing YAML configuration files.
+- **PySerial**: Serial communication library for ESP32 USB adapter.
 - **PCA9685 PWM Controller**: Hardware for pump control (I2C).
 - **INA219 Power Sensors**: Hardware for monitoring current/voltage (I2C).
