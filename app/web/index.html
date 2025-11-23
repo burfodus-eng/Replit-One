@@ -3507,22 +3507,27 @@
       const gpioPin = prompt(`GPIO Pin number:`, '25');
       if (!gpioPin) return;
       
-      // Auto-generate device ID
-      const response = await fetch('/api/settings/hardware');
-      const existingDevices = await response.json();
-      
-      const prefix = type === 'WAVEMAKER' ? 'WM' : 'LED';
-      let maxId = 0;
-      existingDevices.forEach(d => {
-        if (d.device_id.startsWith(prefix)) {
-          const num = parseInt(d.device_id.substring(prefix.length));
-          if (!isNaN(num) && num > maxId) maxId = num;
-        }
-      });
-      const deviceId = `${prefix}${maxId + 1}`;
-      
       try {
-        await fetch('/api/settings/hardware', {
+        // Auto-generate device ID
+        const response = await fetch('/api/settings/hardware');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch devices: ${response.status}`);
+        }
+        const existingDevices = await response.json();
+        
+        const prefix = type === 'WAVEMAKER' ? 'WM' : 'LED';
+        let maxId = 0;
+        existingDevices.forEach(d => {
+          if (d.device_id.startsWith(prefix)) {
+            const num = parseInt(d.device_id.substring(prefix.length));
+            if (!isNaN(num) && num > maxId) maxId = num;
+          }
+        });
+        const deviceId = `${prefix}${maxId + 1}`;
+        
+        console.log(`[Settings] Creating device ${deviceId} on GPIO${gpioPin}`);
+        
+        const createResponse = await fetch('/api/settings/hardware', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -3537,11 +3542,23 @@
             volts_max: type === 'WAVEMAKER' ? 0.6 : 5.0
           })
         });
+        
+        if (!createResponse.ok) {
+          const errorData = await createResponse.text();
+          throw new Error(`Failed to create device: ${createResponse.status} - ${errorData}`);
+        }
+        
+        const createdDevice = await createResponse.json();
+        console.log('[Settings] Device created:', createdDevice);
+        
         showToast(`Device ${deviceId} added successfully`, 'success');
+        
+        console.log('[Settings] Reloading hardware settings...');
         await loadHardwareSettings();
+        console.log('[Settings] Hardware settings reloaded');
       } catch (error) {
         console.error('[Settings] Failed to add device:', error);
-        showToast('Failed to add device', 'error');
+        showToast(`Failed to add device: ${error.message}`, 'error');
       }
     }
 
