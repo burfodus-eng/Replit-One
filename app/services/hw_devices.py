@@ -103,6 +103,16 @@ class PWMDevice:
         self.hw.stop()
         self.current_duty = 0.0
     
+    def cleanup(self) -> None:
+        """Clean up hardware resources."""
+        try:
+            self.hw.stop()
+            if hasattr(self.hw, 'cleanup'):
+                self.hw.cleanup()
+        except Exception as e:
+            logging.error(f"Error during cleanup of {self.config.name}: {e}")
+        self.current_duty = 0.0
+    
     def get_voltage(self) -> float:
         """Calculate approximate output voltage based on current duty."""
         return self.config.volts_min + self.current_duty * (
@@ -192,6 +202,44 @@ class DeviceRegistry:
                 for device_id, device in self.leds.items()
             },
         }
+    
+    def reload_device(self, device_id: str, config: DeviceConfig, device_type: str) -> PWMDevice:
+        """
+        Reload a device with new configuration (hot-reload for GPIO pin changes).
+        
+        Args:
+            device_id: Device identifier
+            config: New device configuration
+            device_type: 'WAVEMAKER' or 'LED'
+            
+        Returns:
+            Reloaded PWMDevice instance
+        """
+        # Clean up old device
+        if device_type == 'WAVEMAKER':
+            old_device = self.wavemakers.get(device_id)
+            if old_device:
+                old_device.stop()
+                old_device.cleanup()
+                logging.info(f"Cleaned up old wavemaker {device_id}")
+        else:
+            old_device = self.leds.get(device_id)
+            if old_device:
+                old_device.stop()
+                old_device.cleanup()
+                logging.info(f"Cleaned up old LED {device_id}")
+        
+        # Create new device with updated config
+        new_device = PWMDevice(config)
+        
+        if device_type == 'WAVEMAKER':
+            self.wavemakers[device_id] = new_device
+            logging.info(f"Reloaded wavemaker {device_id} on GPIO{config.gpio_pin}")
+        else:
+            self.leds[device_id] = new_device
+            logging.info(f"Reloaded LED {device_id} on GPIO{config.gpio_pin}")
+        
+        return new_device
 
 
 # Global registry instance

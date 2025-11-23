@@ -941,6 +941,16 @@
       box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
     }
 
+    .hw-btn-test {
+      background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+      color: white;
+    }
+
+    .hw-btn-test:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+    }
+
     .hw-btn-delete {
       background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
       color: white;
@@ -1362,8 +1372,7 @@
       </div>
       
       <div style="margin-top: 24px; padding: 16px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
-        <p style="font-size: 14px; color: #4a5568; margin-bottom: 8px;"><strong>Note:</strong> Changes to GPIO pins and PWM frequencies require an application restart to take effect.</p>
-        <button class="save-btn" onclick="saveAllHardwareSettings()">Save All Settings & Restart</button>
+        <p style="font-size: 14px; color: #a0aec0;"><strong>💡 Tip:</strong> Changes are applied immediately. Use the Test button to verify your LEDs are working correctly.</p>
       </div>
     </div>
   </div>
@@ -3357,7 +3366,6 @@
             <div class="hw-col-freq">PWM Freq (Hz)</div>
             <div class="hw-col-intensity">Intensity Range</div>
             <div class="hw-col-voltage">Voltage Range</div>
-            <div class="hw-col-follow">Follow</div>
             <div class="hw-col-actions">Actions</div>
           </div>
           ${devices.map(device => `
@@ -3398,17 +3406,10 @@
                          min="0" max="10" placeholder="Max">
                 </div>
               </div>
-              <div class="hw-col-follow">
-                ${device.device_type === 'LED' ? `
-                  <select class="hw-select" onchange="updateDeviceField('${device.device_id}', 'follow_device_id', this.value)">
-                    <option value="">None</option>
-                    ${devices.filter(d => d.device_type === 'WAVEMAKER').map(wm => 
-                      `<option value="${wm.device_id}" ${device.follow_device_id === wm.device_id ? 'selected' : ''}>${wm.name}</option>`
-                    ).join('')}
-                  </select>
-                ` : '<span class="hw-na">—</span>'}
-              </div>
               <div class="hw-col-actions">
+                <button class="hw-btn hw-btn-test" onclick="testDevice('${device.device_id}', ${device.gpio_pin})" title="Test at 50% brightness">
+                  <span>⚡</span> Test
+                </button>
                 <button class="hw-btn hw-btn-save" onclick="saveDeviceSettings('${device.device_id}')">
                   <span>💾</span> Save
                 </button>
@@ -3431,6 +3432,24 @@
       deviceUpdates[deviceId][field] = field.includes('intensity') || field.includes('volts') ? parseFloat(value) : parseInt(value);
     }
 
+    async function testDevice(deviceId, gpioPin) {
+      try {
+        const response = await fetch('/api/settings/hardware/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gpio_pin: gpioPin, duty_cycle: 0.5 })
+        });
+        if (response.ok) {
+          showToast(`Testing ${deviceId} at 50% for 3 seconds`, 'success');
+        } else {
+          showToast('Test failed - check hardware connection', 'error');
+        }
+      } catch (error) {
+        console.error('[Settings] Test failed:', error);
+        showToast('Test failed', 'error');
+      }
+    }
+
     async function saveDeviceSettings(deviceId) {
       if (!deviceUpdates[deviceId]) {
         showToast('No changes to save', 'info');
@@ -3444,8 +3463,8 @@
           body: JSON.stringify(deviceUpdates[deviceId])
         });
         delete deviceUpdates[deviceId];
-        showToast('Device settings saved! Restarting...', 'success');
-        setTimeout(() => window.location.reload(), 2000);
+        showToast('Device settings saved successfully', 'success');
+        await loadHardwareSettings();
       } catch (error) {
         console.error('[Settings] Failed to save:', error);
         showToast('Failed to save settings', 'error');
@@ -3481,31 +3500,49 @@
       }
     }
 
-    function addNewDevice() {
+    async function addNewDevice() {
       const name = prompt('Device name:');
       if (!name) return;
-      const deviceId = prompt('Device ID (e.g., WM1, LED1):');
-      if (!deviceId) return;
       const type = confirm('Is this a WAVEMAKER? (Cancel for LED)') ? 'WAVEMAKER' : 'LED';
+      const gpioPin = prompt(`GPIO Pin number:`, '25');
+      if (!gpioPin) return;
       
-      fetch('/api/settings/hardware', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          device_id: deviceId,
-          name: name,
-          device_type: type,
-          gpio_pin: 18,
-          pwm_freq_hz: type === 'WAVEMAKER' ? 200 : 800,
-          min_intensity: type === 'WAVEMAKER' ? 0.05 : 0.0,
-          max_intensity: 1.0,
-          volts_min: 0.0,
-          volts_max: type === 'WAVEMAKER' ? 0.6 : 5.0
-        })
-      }).then(() => {
-        showToast('Device added', 'success');
-        loadHardwareSettings();
-      }).catch(() => showToast('Failed to add device', 'error'));
+      // Auto-generate device ID
+      const response = await fetch('/api/settings/hardware');
+      const existingDevices = await response.json();
+      
+      const prefix = type === 'WAVEMAKER' ? 'WM' : 'LED';
+      let maxId = 0;
+      existingDevices.forEach(d => {
+        if (d.device_id.startsWith(prefix)) {
+          const num = parseInt(d.device_id.substring(prefix.length));
+          if (!isNaN(num) && num > maxId) maxId = num;
+        }
+      });
+      const deviceId = `${prefix}${maxId + 1}`;
+      
+      try {
+        await fetch('/api/settings/hardware', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            device_id: deviceId,
+            name: name,
+            device_type: type,
+            gpio_pin: parseInt(gpioPin),
+            pwm_freq_hz: type === 'WAVEMAKER' ? 200 : 800,
+            min_intensity: type === 'WAVEMAKER' ? 0.05 : 0.0,
+            max_intensity: 1.0,
+            volts_min: 0.0,
+            volts_max: type === 'WAVEMAKER' ? 0.6 : 5.0
+          })
+        });
+        showToast(`Device ${deviceId} added successfully`, 'success');
+        await loadHardwareSettings();
+      } catch (error) {
+        console.error('[Settings] Failed to add device:', error);
+        showToast('Failed to add device', 'error');
+      }
     }
 
     function init() {
