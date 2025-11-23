@@ -52,7 +52,7 @@ async def get_device(device_id: str, request: Request):
 @router.post('/api/settings/hardware')
 async def create_device(device: DeviceConfigCreate, request: Request):
     from app.services.storage import DeviceConfigRow
-    from app.services.hw_devices import get_device_registry, DeviceConfig
+    from app.services.hw_devices import registry, DeviceConfig
     
     store = request.app.state.store
     
@@ -72,7 +72,6 @@ async def create_device(device: DeviceConfigCreate, request: Request):
     created = store.create_device_config(new_device)
     
     # Immediately register device in hardware registry
-    registry = get_device_registry()
     config = DeviceConfig(
         name=created.name,
         gpio_pin=created.gpio_pin,
@@ -118,9 +117,7 @@ async def update_device(device_id: str, updates: DeviceConfigUpdate, request: Re
     
     # Hot-reload the device if GPIO pin or PWM frequency changed
     if 'gpio_pin' in update_data or 'pwm_freq_hz' in update_data:
-        from app.services.hw_devices import get_device_registry, DeviceConfig
-        
-        registry = get_device_registry()
+        from app.services.hw_devices import registry, DeviceConfig
         
         # Build new config from updated device
         config = DeviceConfig(
@@ -158,10 +155,9 @@ class TestDeviceRequest(BaseModel):
 async def test_device(test_req: TestDeviceRequest, request: Request):
     """Test a GPIO device by setting it to specified duty cycle for 3 seconds"""
     try:
-        from app.services.hw_devices import get_device_registry, DeviceConfig, PWMDevice
+        from app.services.hw_devices import registry, DeviceConfig, PWMDevice
         
         store = request.app.state.store
-        registry = get_device_registry()
         
         # Check if this GPIO is already assigned to a device
         all_devices = store.get_all_device_configs()
