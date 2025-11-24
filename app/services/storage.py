@@ -120,8 +120,6 @@ class Store:
             preset = s.get(WavemakerPreset, preset_id)
             if not preset:
                 return None
-            if preset.is_built_in:
-                return None
             for key, value in kwargs.items():
                 if hasattr(preset, key):
                     setattr(preset, key, value)

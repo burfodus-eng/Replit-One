@@ -47,7 +47,7 @@ async def update_preset(preset_id: int, data: WavemakerPresetRequest, request: R
     
     updated = request.app.state.store.update_preset(preset_id, **updates)
     if not updated:
-        raise HTTPException(status_code=404, detail="Preset not found or is built-in")
+        raise HTTPException(status_code=404, detail="Preset not found")
     return WavemakerPresetResponse(**updated.model_dump())
 
 
