@@ -31,7 +31,7 @@ class PresetManager:
         for i in range(1, 7):
             flow_curves[f"wavemaker_{i}"] = [
                 {"time": 0, "power": 30},
-                {"time": 60, "power": 30}
+                {"time": 100, "power": 30}
             ]
         
         return WavemakerPreset(
@@ -47,9 +47,9 @@ class PresetManager:
         for i in range(1, 7):
             flow_curves[f"wavemaker_{i}"] = [
                 {"time": 0, "power": 20},
-                {"time": 2, "power": 80},
-                {"time": 5, "power": 20},
-                {"time": 10, "power": 20}
+                {"time": 20, "power": 80},
+                {"time": 50, "power": 20},
+                {"time": 100, "power": 20}
             ]
         
         return WavemakerPreset(
@@ -69,7 +69,8 @@ class PresetManager:
             for t in range(0, 361, 30):
                 phase = (t + offset) % 360
                 power = int(50 + 30 * math.sin(math.radians(phase)))
-                points.append({"time": t / 6, "power": power})
+                time_pct = (t / 360) * 100
+                points.append({"time": round(time_pct, 1), "power": power})
             flow_curves[f"wavemaker_{i}"] = points
         
         return WavemakerPreset(
@@ -89,7 +90,8 @@ class PresetManager:
             for t in range(0, 361, 30):
                 phase = (t + offset) % 360
                 power = int(50 + 30 * math.sin(math.radians(phase)))
-                points.append({"time": t / 6, "power": power})
+                time_pct = (t / 360) * 100
+                points.append({"time": round(time_pct, 1), "power": power})
             flow_curves[f"wavemaker_{i}"] = points
         
         return WavemakerPreset(
@@ -105,7 +107,7 @@ class PresetManager:
         for i in range(1, 7):
             flow_curves[f"wavemaker_{i}"] = [
                 {"time": 0, "power": 5},
-                {"time": 600, "power": 5}
+                {"time": 100, "power": 5}
             ]
         
         return WavemakerPreset(
@@ -123,8 +125,8 @@ class PresetManager:
         flow_curves = {}
         for i in range(1, 7):
             points = [{"time": 0, "power": random.randint(40, 70)}]
-            for t in range(5, 65, 5):
-                points.append({"time": t, "power": random.randint(30, 80)})
+            for pct in range(8, 108, 8):
+                points.append({"time": min(pct, 100), "power": random.randint(30, 80)})
             flow_curves[f"wavemaker_{i}"] = points
         
         return WavemakerPreset(
@@ -158,7 +160,8 @@ class PresetManager:
             return {i: 0.0 for i in range(1, 7)}
         
         elapsed = time.time() - self.cycle_start_time
-        position_in_cycle = elapsed % preset.cycle_duration_sec
+        position_in_cycle_sec = elapsed % preset.cycle_duration_sec
+        position_in_cycle_pct = (position_in_cycle_sec / preset.cycle_duration_sec) * 100
         
         power_levels = {}
         for i in range(1, 7):
@@ -166,7 +169,7 @@ class PresetManager:
             if wm_key in preset.flow_curves:
                 power_levels[i] = self._interpolate_power(
                     preset.flow_curves[wm_key],
-                    position_in_cycle
+                    position_in_cycle_pct
                 )
             else:
                 power_levels[i] = 0.0

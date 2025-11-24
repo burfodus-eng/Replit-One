@@ -2116,14 +2116,12 @@
         ctx.lineJoin = 'round';
         ctx.beginPath();
         
-        const cycleDuration = activePreset.cycle_duration_sec;
-        
-        for (let t = 0; t <= cycleDuration; t += cycleDuration / 200) {
-          const power = interpolatePower(curve, t, cycleDuration);
-          const x = (t / cycleDuration) * width;
+        for (let pct = 0; pct <= 100; pct += 0.5) {
+          const power = interpolatePower(curve, pct);
+          const x = (pct / 100) * width;
           const y = height - (power / 100) * (height - 10) - 5;
           
-          if (t === 0) {
+          if (pct === 0) {
             ctx.moveTo(x, y);
           } else {
             ctx.lineTo(x, y);
@@ -2134,9 +2132,9 @@
         ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.beginPath();
         ctx.moveTo(0, height);
-        for (let t = 0; t <= cycleDuration; t += cycleDuration / 200) {
-          const power = interpolatePower(curve, t, cycleDuration);
-          const x = (t / cycleDuration) * width;
+        for (let pct = 0; pct <= 100; pct += 0.5) {
+          const power = interpolatePower(curve, pct);
+          const x = (pct / 100) * width;
           const y = height - (power / 100) * (height - 10) - 5;
           ctx.lineTo(x, y);
         }
@@ -2397,8 +2395,28 @@
       
       presetCurveData = JSON.parse(JSON.stringify(preset.flow_curves));
       
+      normalizeLegacyKeyframes(preset.cycle_duration_sec);
+      
       renderPresetList();
       drawAllCurves();
+    }
+    
+    function normalizeLegacyKeyframes(cycleDuration) {
+      for (const wavemakerKey in presetCurveData) {
+        const curve = presetCurveData[wavemakerKey] || [];
+        if (curve.length === 0) continue;
+        
+        const maxTime = Math.max(...curve.map(pt => pt.time));
+        
+        const isLegacySeconds = maxTime > 100 || (maxTime >= cycleDuration * 0.9 && maxTime <= cycleDuration);
+        
+        if (isLegacySeconds) {
+          console.log(`[Preset Editor] Converting legacy second-based keyframes to percentages for ${wavemakerKey} (maxTime: ${maxTime}, cycleDuration: ${cycleDuration})`);
+          curve.forEach(pt => {
+            pt.time = (pt.time / cycleDuration) * 100;
+          });
+        }
+      }
     }
     
     function createNewPreset() {
@@ -2414,7 +2432,7 @@
       for (let i = 1; i <= 6; i++) {
         presetCurveData[`wavemaker_${i}`] = [
           { time: 0, power: 50 },
-          { time: 60, power: 50 }
+          { time: 100, power: 50 }
         ];
       }
       
@@ -2438,7 +2456,7 @@
         const curve = presetCurveData[key] || [];
         curve.sort((a, b) => a.time - b.time);
         normalizedCurves[key] = curve.map(pt => ({
-          time: Math.max(0, Math.min(cycleDuration, pt.time)),
+          time: Math.max(0, Math.min(100, pt.time)),
           power: Math.max(0, Math.min(100, Math.round(pt.power)))
         }));
       }
@@ -2533,7 +2551,7 @@
       const y = e.clientY - rect.top;
       
       const cycleDuration = parseInt(document.getElementById('presetCycleDuration').value) || 60;
-      const clickedIndex = findNearestPoint(x, y, editor.canvas, editor.wavemakerKey, cycleDuration);
+      const clickedIndex = findNearestPoint(x, y, editor.canvas, editor.wavemakerKey);
       
       console.log('[Preset Editor] Mouse down at', x, y, 'clicked index:', clickedIndex);
       
@@ -2550,17 +2568,17 @@
       } else {
         const displayWidth = rect.width;
         const displayHeight = rect.height;
-        const time = (x / displayWidth) * cycleDuration;
+        const timePct = (x / displayWidth) * 100;
         const power = 100 - (y / displayHeight) * 100;
         
-        console.log('[Preset Editor] Adding new point at time:', time.toFixed(1), 'power:', power.toFixed(1));
+        console.log('[Preset Editor] Adding new point at time:', timePct.toFixed(1), '% power:', power.toFixed(1));
         
         if (!presetCurveData[editor.wavemakerKey]) {
           presetCurveData[editor.wavemakerKey] = [];
         }
         
         presetCurveData[editor.wavemakerKey].push({
-          time: Math.max(0, Math.min(cycleDuration, time)),
+          time: Math.max(0, Math.min(100, timePct)),
           power: Math.max(0, Math.min(100, power))
         });
         
@@ -2578,18 +2596,18 @@
       if (editor.draggedPointIndex >= 0) {
         const displayWidth = rect.width;
         const displayHeight = rect.height;
-        const time = (x / displayWidth) * cycleDuration;
+        const timePct = (x / displayWidth) * 100;
         const power = 100 - (y / displayHeight) * 100;
         
         const curve = presetCurveData[editor.wavemakerKey] || [];
         if (editor.draggedPointIndex < curve.length) {
-          curve[editor.draggedPointIndex].time = Math.max(0, Math.min(cycleDuration, time));
+          curve[editor.draggedPointIndex].time = Math.max(0, Math.min(100, timePct));
           curve[editor.draggedPointIndex].power = Math.max(0, Math.min(100, power));
           curve.sort((a, b) => a.time - b.time);
           drawCurve(editor.canvas, editor.wavemakerKey, cycleDuration);
         }
       } else {
-        const hoverIndex = findNearestPoint(x, y, editor.canvas, editor.wavemakerKey, cycleDuration);
+        const hoverIndex = findNearestPoint(x, y, editor.canvas, editor.wavemakerKey);
         if (hoverIndex !== editor.hoverPointIndex) {
           editor.hoverPointIndex = hoverIndex;
           drawCurve(editor.canvas, editor.wavemakerKey, cycleDuration);
@@ -2601,7 +2619,7 @@
       editor.draggedPointIndex = -1;
     }
     
-    function findNearestPoint(x, y, canvas, wavemakerKey, cycleDuration) {
+    function findNearestPoint(x, y, canvas, wavemakerKey) {
       const curve = presetCurveData[wavemakerKey] || [];
       const threshold = 10;
       
@@ -2611,7 +2629,7 @@
       
       for (let i = 0; i < curve.length; i++) {
         const pt = curve[i];
-        const px = (pt.time / cycleDuration) * displayWidth;
+        const px = (pt.time / 100) * displayWidth;
         const py = (1 - pt.power / 100) * displayHeight;
         
         const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
@@ -2661,12 +2679,12 @@
       ctx.lineWidth = 3;
       ctx.beginPath();
       
-      for (let t = 0; t <= cycleDuration; t += 0.1) {
-        const power = interpolatePower(curve, t, cycleDuration);
-        const x = (t / cycleDuration) * width;
+      for (let pct = 0; pct <= 100; pct += 0.5) {
+        const power = interpolatePower(curve, pct);
+        const x = (pct / 100) * width;
         const y = (1 - power / 100) * height;
         
-        if (t === 0) {
+        if (pct === 0) {
           ctx.moveTo(x, y);
         } else {
           ctx.lineTo(x, y);
@@ -2675,7 +2693,7 @@
       ctx.stroke();
       
       curve.forEach((pt, idx) => {
-        const x = (pt.time / cycleDuration) * width;
+        const x = (pt.time / 100) * width;
         const y = (1 - pt.power / 100) * height;
         
         ctx.fillStyle = '#667eea';
@@ -2689,19 +2707,19 @@
       });
     }
     
-    function interpolatePower(curve, time, cycleDuration) {
+    function interpolatePower(curve, timePct) {
       if (curve.length === 0) return 0;
       if (curve.length === 1) return curve[0].power;
       
-      if (time <= curve[0].time) return curve[0].power;
-      if (time >= curve[curve.length - 1].time) return curve[curve.length - 1].power;
+      if (timePct <= curve[0].time) return curve[0].power;
+      if (timePct >= curve[curve.length - 1].time) return curve[curve.length - 1].power;
       
       for (let i = 0; i < curve.length - 1; i++) {
         const pt1 = curve[i];
         const pt2 = curve[i + 1];
         
-        if (time >= pt1.time && time <= pt2.time) {
-          const t = (time - pt1.time) / (pt2.time - pt1.time);
+        if (timePct >= pt1.time && timePct <= pt2.time) {
+          const t = (timePct - pt1.time) / (pt2.time - pt1.time);
           return pt1.power + t * (pt2.power - pt1.power);
         }
       }
