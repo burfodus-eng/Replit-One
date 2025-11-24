@@ -91,8 +91,16 @@ class PigpioPWM:
         # Clamp to valid range
         duty = max(0.0, min(1.0, duty))
         
-        # Convert to 0-255 range for ESP32 analogWrite
-        pwm_value = int(duty * 255)
+        # Apply gamma correction for more natural brightness perception
+        gamma = 2.2
+        raw_pwm = (duty ** gamma) * 255
+        
+        # Enforce minimum floor for visibility (1% should still be visible)
+        if duty > 0 and raw_pwm < 5:
+            raw_pwm = 5
+        
+        # Convert to integer for ESP32
+        pwm_value = int(raw_pwm)
         
         # Send to ESP32
         self._send_command(pwm_value)
