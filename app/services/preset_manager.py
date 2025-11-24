@@ -49,10 +49,10 @@ class PresetManager:
         flow_curves = {}
         for i in range(1, 13):
             flow_curves[f"wavemaker_{i}"] = [
-                {"time": 0, "power": 20},
-                {"time": 20, "power": 80},
-                {"time": 50, "power": 20},
-                {"time": 100, "power": 20}
+                {"time": 0, "power": 0},
+                {"time": 20, "power": 100},
+                {"time": 50, "power": 0},
+                {"time": 100, "power": 0}
             ]
         
         return WavemakerPreset(
@@ -71,7 +71,7 @@ class PresetManager:
             points = []
             for t in range(0, 361, 30):
                 phase = (t + offset) % 360
-                power = int(50 + 30 * math.sin(math.radians(phase)))
+                power = int(50 + 50 * math.sin(math.radians(phase)))
                 time_pct = (t / 360) * 100
                 points.append({"time": round(time_pct, 1), "power": power})
             flow_curves[f"wavemaker_{i}"] = points
@@ -92,7 +92,7 @@ class PresetManager:
             points = []
             for t in range(0, 361, 30):
                 phase = (t + offset) % 360
-                power = int(50 + 30 * math.sin(math.radians(phase)))
+                power = int(50 + 50 * math.sin(math.radians(phase)))
                 time_pct = (t / 360) * 100
                 points.append({"time": round(time_pct, 1), "power": power})
             flow_curves[f"wavemaker_{i}"] = points
@@ -127,9 +127,9 @@ class PresetManager:
         
         flow_curves = {}
         for i in range(1, 13):
-            points = [{"time": 0, "power": random.randint(40, 70)}]
+            points = [{"time": 0, "power": random.randint(0, 100)}]
             for pct in range(8, 108, 8):
-                points.append({"time": min(pct, 100), "power": random.randint(30, 80)})
+                points.append({"time": min(pct, 100), "power": random.randint(0, 100)})
             flow_curves[f"wavemaker_{i}"] = points
         
         return WavemakerPreset(
@@ -156,25 +156,25 @@ class PresetManager:
                 end_time = round((seg + 1) * segment_size, 1)
                 
                 if seg == active_segment:
-                    # This is the active segment - create plateau at 80%
-                    # First, add a keyframe at start_time with power 5 to prevent ramp-up
+                    # This is the active segment - create plateau at 100%
+                    # First, add a keyframe at start_time with power 0 to prevent ramp-up
                     if start_time > 0:
-                        points.append({"time": start_time, "power": 5})
-                    points.append({"time": start_time, "power": 80})
-                    points.append({"time": end_time, "power": 80})
-                    # Immediate drop to 5% at end of segment (even if end_time == 100)
-                    points.append({"time": end_time, "power": 5})
+                        points.append({"time": start_time, "power": 0})
+                    points.append({"time": start_time, "power": 100})
+                    points.append({"time": end_time, "power": 100})
+                    # Immediate drop to 0% at end of segment (even if end_time == 100)
+                    points.append({"time": end_time, "power": 0})
                 elif seg == 0:
                     # Start of cycle - set initial power
                     if active_segment == 0:
-                        # Channel 1 starts at 80% immediately
+                        # Channel 1 starts at 100% immediately
                         pass
                     else:
-                        points.append({"time": start_time, "power": 5})
+                        points.append({"time": start_time, "power": 0})
             
-            # Ensure we end at 100% with power 5
-            if not any(p["time"] == 100 and p["power"] == 5 for p in points):
-                points.append({"time": 100, "power": 5})
+            # Ensure we end at 100% with power 0
+            if not any(p["time"] == 100 and p["power"] == 0 for p in points):
+                points.append({"time": 100, "power": 0})
             
             flow_curves[f"wavemaker_{i}"] = points
         
@@ -199,11 +199,11 @@ class PresetManager:
             points = []
             for step_idx, active_channel in enumerate(sequence):
                 time_pct = step_idx * segment_size
-                power = 80 if active_channel == i else 5
+                power = 100 if active_channel == i else 0
                 points.append({"time": round(time_pct, 1), "power": power})
             
             # Add final point at 100%
-            points.append({"time": 100, "power": 80 if sequence[0] == i else 5})
+            points.append({"time": 100, "power": 100 if sequence[0] == i else 0})
             flow_curves[f"wavemaker_{i}"] = points
         
         return WavemakerPreset(
@@ -225,9 +225,9 @@ class PresetManager:
             
             # Create oscillating pattern
             points = [
-                {"time": 0, "power": 80 if is_odd else 10},
-                {"time": 50, "power": 10 if is_odd else 80},
-                {"time": 100, "power": 80 if is_odd else 10}
+                {"time": 0, "power": 100 if is_odd else 0},
+                {"time": 50, "power": 0 if is_odd else 100},
+                {"time": 100, "power": 100 if is_odd else 0}
             ]
             
             flow_curves[f"wavemaker_{i}"] = points
