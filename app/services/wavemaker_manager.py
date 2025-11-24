@@ -140,7 +140,7 @@ class Channel:
 
 
 class WavemakerManager:
-    """Manages all 6 wavemaker channels"""
+    """Manages all 12 wavemaker channels"""
     
     def __init__(self):
         self.hal = WavemakerHAL()
@@ -151,12 +151,18 @@ class WavemakerManager:
             Channel(2, "Mid Left"),
             Channel(3, "Mid Right"),
             Channel(4, "Back Left"),
-            Channel(5, "Back Right")
+            Channel(5, "Back Right"),
+            Channel(6, "Side Left Top"),
+            Channel(7, "Side Right Top"),
+            Channel(8, "Side Left Bottom"),
+            Channel(9, "Side Right Bottom"),
+            Channel(10, "Rear Left"),
+            Channel(11, "Rear Right")
         ]
         
         self.history_window_s = 900
         self.history: Dict[int, Deque[WavemakerHistoryPoint]] = {
-            i: deque(maxlen=900) for i in range(6)
+            i: deque(maxlen=900) for i in range(12)
         }
         
         self.last_telemetry_time = 0.0

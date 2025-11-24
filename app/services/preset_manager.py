@@ -28,7 +28,7 @@ class PresetManager:
     
     def _create_gentle_preset(self) -> WavemakerPreset:
         flow_curves = {}
-        for i in range(1, 7):
+        for i in range(1, 13):
             flow_curves[f"wavemaker_{i}"] = [
                 {"time": 0, "power": 30},
                 {"time": 100, "power": 30}
@@ -44,7 +44,7 @@ class PresetManager:
     
     def _create_pulse_preset(self) -> WavemakerPreset:
         flow_curves = {}
-        for i in range(1, 7):
+        for i in range(1, 13):
             flow_curves[f"wavemaker_{i}"] = [
                 {"time": 0, "power": 20},
                 {"time": 20, "power": 80},
@@ -62,7 +62,7 @@ class PresetManager:
     
     def _create_gyre_cw_preset(self) -> WavemakerPreset:
         flow_curves = {}
-        phase_offsets = [0, 60, 120, 180, 240, 300]
+        phase_offsets = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330]
         
         for i, offset in enumerate(phase_offsets, 1):
             points = []
@@ -83,7 +83,7 @@ class PresetManager:
     
     def _create_gyre_ccw_preset(self) -> WavemakerPreset:
         flow_curves = {}
-        phase_offsets = [0, 300, 240, 180, 120, 60]
+        phase_offsets = [0, 330, 300, 270, 240, 210, 180, 150, 120, 90, 60, 30]
         
         for i, offset in enumerate(phase_offsets, 1):
             points = []
@@ -104,7 +104,7 @@ class PresetManager:
     
     def _create_feed_mode_preset(self) -> WavemakerPreset:
         flow_curves = {}
-        for i in range(1, 7):
+        for i in range(1, 13):
             flow_curves[f"wavemaker_{i}"] = [
                 {"time": 0, "power": 5},
                 {"time": 100, "power": 5}
@@ -123,7 +123,7 @@ class PresetManager:
         random.seed(42)
         
         flow_curves = {}
-        for i in range(1, 7):
+        for i in range(1, 13):
             points = [{"time": 0, "power": random.randint(40, 70)}]
             for pct in range(8, 108, 8):
                 points.append({"time": min(pct, 100), "power": random.randint(30, 80)})
@@ -153,18 +153,18 @@ class PresetManager:
     
     def get_current_power_levels(self) -> Dict[int, float]:
         if self.active_preset_id is None:
-            return {i: 0.0 for i in range(1, 7)}
+            return {i: 0.0 for i in range(1, 13)}
         
         preset = self.store.get_preset(self.active_preset_id)
         if not preset:
-            return {i: 0.0 for i in range(1, 7)}
+            return {i: 0.0 for i in range(1, 13)}
         
         elapsed = time.time() - self.cycle_start_time
         position_in_cycle_sec = elapsed % preset.cycle_duration_sec
         position_in_cycle_pct = (position_in_cycle_sec / preset.cycle_duration_sec) * 100
         
         power_levels = {}
-        for i in range(1, 7):
+        for i in range(1, 13):
             wm_key = f"wavemaker_{i}"
             if wm_key in preset.flow_curves:
                 power_levels[i] = self._interpolate_power(

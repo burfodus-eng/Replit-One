@@ -11,7 +11,7 @@ HARDWARE_MODE = os.getenv("HARDWARE_MODE", "sim")
 
 
 class WavemakerHAL:
-    """Hardware abstraction for 6-channel wavemaker system"""
+    """Hardware abstraction for 12-channel wavemaker system"""
     
     def __init__(self):
         self.pca = create_pca9685(address=0x40)
@@ -23,7 +23,13 @@ class WavemakerHAL:
             2: 0x44,
             3: 0x45,
             4: 0x48,
-            5: 0x49
+            5: 0x49,
+            6: 0x4A,
+            7: 0x4B,
+            8: 0x4C,
+            9: 0x4D,
+            10: 0x4E,
+            11: 0x4F
         }
         self.sensors = SensorArray(sensor_addresses)
         
@@ -33,7 +39,13 @@ class WavemakerHAL:
             2: 2,
             3: 3,
             4: 4,
-            5: 5
+            5: 5,
+            6: 6,
+            7: 7,
+            8: 8,
+            9: 9,
+            10: 10,
+            11: 11
         }
         
     def set_channel_pwm(self, channel_id: int, duty: float):
@@ -41,7 +53,7 @@ class WavemakerHAL:
         Set PWM duty cycle for a channel
         
         Args:
-            channel_id: Channel number (0-5)
+            channel_id: Channel number (0-11)
             duty: Duty cycle 0.0 to 1.0
         """
         if channel_id not in self.channel_map:
@@ -67,10 +79,10 @@ class WavemakerHAL:
         """Read power for all channels"""
         return {
             channel_id: self.read_channel_power(channel_id)
-            for channel_id in range(6)
+            for channel_id in range(12)
         }
         
     def shutdown_all(self):
         """Emergency shutdown - set all channels to 0%"""
-        for channel_id in range(6):
+        for channel_id in range(12):
             self.set_channel_pwm(channel_id, 0.0)

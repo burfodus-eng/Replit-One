@@ -1531,6 +1531,72 @@
                 </div>
                 <div class="curve-help-text">Time (seconds) → Power (%)</div>
               </div>
+              
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">
+                  Wavemaker 7
+                  <button onclick="clearCurve('wavemaker_7')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas7" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
+              
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">
+                  Wavemaker 8
+                  <button onclick="clearCurve('wavemaker_8')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas8" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
+              
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">
+                  Wavemaker 9
+                  <button onclick="clearCurve('wavemaker_9')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas9" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
+              
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">
+                  Wavemaker 10
+                  <button onclick="clearCurve('wavemaker_10')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas10" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
+              
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">
+                  Wavemaker 11
+                  <button onclick="clearCurve('wavemaker_11')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas11" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
+              
+              <div class="curve-editor-panel">
+                <div class="curve-editor-header">
+                  Wavemaker 12
+                  <button onclick="clearCurve('wavemaker_12')" style="float: right; padding: 4px 12px; background: #f56565; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Clear</button>
+                </div>
+                <div class="curve-canvas-container">
+                  <canvas class="curve-canvas" id="curveCanvas12" width="400" height="200"></canvas>
+                </div>
+                <div class="curve-help-text">Time (seconds) → Power (%)</div>
+              </div>
             </div>
           </div>
           
@@ -2429,7 +2495,7 @@
       document.getElementById('deletePresetBtn').disabled = true;
       
       presetCurveData = {};
-      for (let i = 1; i <= 6; i++) {
+      for (let i = 1; i <= 12; i++) {
         presetCurveData[`wavemaker_${i}`] = [
           { time: 0, power: 50 },
           { time: 100, power: 50 }
@@ -2451,7 +2517,7 @@
       }
       
       const normalizedCurves = {};
-      for (let i = 1; i <= 6; i++) {
+      for (let i = 1; i <= 12; i++) {
         const key = `wavemaker_${i}`;
         const curve = presetCurveData[key] || [];
         curve.sort((a, b) => a.time - b.time);
@@ -2523,7 +2589,7 @@
     
     function initializeCurveEditors() {
       curveEditors = [];
-      for (let i = 1; i <= 6; i++) {
+      for (let i = 1; i <= 12; i++) {
         const canvas = document.getElementById(`curveCanvas${i}`);
         const wavemakerKey = `wavemaker_${i}`;
         
@@ -2641,7 +2707,7 @@
     
     function drawAllCurves() {
       const cycleDuration = parseInt(document.getElementById('presetCycleDuration').value) || 60;
-      for (let i = 1; i <= 6; i++) {
+      for (let i = 1; i <= 12; i++) {
         const canvas = document.getElementById(`curveCanvas${i}`);
         const wavemakerKey = `wavemaker_${i}`;
         drawCurve(canvas, wavemakerKey, cycleDuration);
