@@ -139,10 +139,19 @@ async def update_device(device_id: str, updates: DeviceConfigUpdate, request: Re
 
 @router.delete('/api/settings/hardware/{device_id}')
 async def delete_device(device_id: str, request: Request):
+    from app.services.hw_devices import registry
+    
     store = request.app.state.store
+    
+    # First, unregister from hardware registry (stops output and cleans up)
+    registry.unregister_device(device_id)
+    
+    # Then delete from database
     success = store.delete_device_config(device_id)
     if not success:
         raise HTTPException(status_code=404, detail=f"Device {device_id} not found")
+    
+    logging.info(f"[Settings] Deleted device {device_id} from registry and database")
     return {"success": True}
 
 

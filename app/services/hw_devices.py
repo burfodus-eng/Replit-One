@@ -203,6 +203,37 @@ class DeviceRegistry:
             },
         }
     
+    def unregister_device(self, device_id: str) -> bool:
+        """
+        Unregister a device, stopping output and cleaning up resources.
+        
+        Args:
+            device_id: Device identifier
+            
+        Returns:
+            True if device was found and unregistered, False otherwise
+        """
+        # Try wavemakers first
+        device = self.wavemakers.get(device_id)
+        if device:
+            device.stop()
+            device.cleanup()
+            del self.wavemakers[device_id]
+            logging.info(f"Unregistered wavemaker {device_id}")
+            return True
+        
+        # Try LEDs
+        device = self.leds.get(device_id)
+        if device:
+            device.stop()
+            device.cleanup()
+            del self.leds[device_id]
+            logging.info(f"Unregistered LED {device_id}")
+            return True
+        
+        logging.warning(f"Device {device_id} not found in registry")
+        return False
+    
     def reload_device(self, device_id: str, config: DeviceConfig, device_type: str) -> PWMDevice:
         """
         Reload a device with new configuration (hot-reload for GPIO pin changes).

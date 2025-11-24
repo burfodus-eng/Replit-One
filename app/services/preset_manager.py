@@ -20,7 +20,10 @@ class PresetManager:
                 self._create_gyre_cw_preset(),
                 self._create_gyre_ccw_preset(),
                 self._create_feed_mode_preset(),
-                self._create_random_reef_preset()
+                self._create_random_reef_preset(),
+                self._create_sequential_walk_preset(),
+                self._create_knight_rider_preset(),
+                self._create_paired_police_preset()
             ]
             
             for preset in built_in_presets:
@@ -133,6 +136,106 @@ class PresetManager:
             name="Random Reef",
             description="Chaotic natural reef flow",
             cycle_duration_sec=60,
+            is_built_in=True,
+            flow_curves=flow_curves
+        )
+    
+    def _create_sequential_walk_preset(self) -> WavemakerPreset:
+        """Single channel walks 1-12 repeatedly"""
+        flow_curves = {}
+        segment_size = 100 / 12  # Each channel gets 1/12 of the cycle
+        
+        for i in range(1, 13):
+            points = []
+            
+            # Determine which segment this channel is active (0-indexed)
+            active_segment = i - 1  # Channel 1 is active in segment 0, etc.
+            
+            for seg in range(12):
+                start_time = round(seg * segment_size, 1)
+                end_time = round((seg + 1) * segment_size, 1)
+                
+                if seg == active_segment:
+                    # This is the active segment - create plateau at 80%
+                    # First, add a keyframe at start_time with power 5 to prevent ramp-up
+                    if start_time > 0:
+                        points.append({"time": start_time, "power": 5})
+                    points.append({"time": start_time, "power": 80})
+                    points.append({"time": end_time, "power": 80})
+                    # Immediate drop to 5% at end of segment (even if end_time == 100)
+                    points.append({"time": end_time, "power": 5})
+                elif seg == 0:
+                    # Start of cycle - set initial power
+                    if active_segment == 0:
+                        # Channel 1 starts at 80% immediately
+                        pass
+                    else:
+                        points.append({"time": start_time, "power": 5})
+            
+            # Ensure we end at 100% with power 5
+            if not any(p["time"] == 100 and p["power"] == 5 for p in points):
+                points.append({"time": 100, "power": 5})
+            
+            flow_curves[f"wavemaker_{i}"] = points
+        
+        return WavemakerPreset(
+            name="Sequential Walk",
+            description="Single channel walks 1-12 repeatedly",
+            cycle_duration_sec=12,
+            is_built_in=True,
+            flow_curves=flow_curves
+        )
+    
+    def _create_knight_rider_preset(self) -> WavemakerPreset:
+        """Bouncing pattern 1-12-1 like Knight Rider scanner"""
+        flow_curves = {}
+        
+        # Pattern: 1,2,3,4,5,6,7,8,9,10,11,12,11,10,9,8,7,6,5,4,3,2 (22 steps)
+        sequence = list(range(1, 13)) + list(range(11, 1, -1))
+        num_steps = len(sequence)
+        segment_size = 100 / num_steps
+        
+        for i in range(1, 13):
+            points = []
+            for step_idx, active_channel in enumerate(sequence):
+                time_pct = step_idx * segment_size
+                power = 80 if active_channel == i else 5
+                points.append({"time": round(time_pct, 1), "power": power})
+            
+            # Add final point at 100%
+            points.append({"time": 100, "power": 80 if sequence[0] == i else 5})
+            flow_curves[f"wavemaker_{i}"] = points
+        
+        return WavemakerPreset(
+            name="Knight Rider",
+            description="Bouncing scanner pattern 1-12-1",
+            cycle_duration_sec=22,
+            is_built_in=True,
+            flow_curves=flow_curves
+        )
+    
+    def _create_paired_police_preset(self) -> WavemakerPreset:
+        """Each pair oscillates like police lights: 1-2, 3-4, 5-6, etc."""
+        flow_curves = {}
+        
+        for i in range(1, 13):
+            # Determine which pair this channel belongs to
+            pair_num = (i - 1) // 2  # 0-based pair index
+            is_odd = (i % 2) == 1  # True if channel 1, 3, 5, 7, 9, 11
+            
+            # Create oscillating pattern
+            points = [
+                {"time": 0, "power": 80 if is_odd else 10},
+                {"time": 50, "power": 10 if is_odd else 80},
+                {"time": 100, "power": 80 if is_odd else 10}
+            ]
+            
+            flow_curves[f"wavemaker_{i}"] = points
+        
+        return WavemakerPreset(
+            name="Paired Police",
+            description="Each pair oscillates independently (1-2, 3-4, 5-6...)",
+            cycle_duration_sec=2,
             is_built_in=True,
             flow_curves=flow_curves
         )
