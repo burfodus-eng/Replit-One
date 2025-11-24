@@ -3481,8 +3481,8 @@
           ${devices.map(device => `
             <div class="hardware-table-row" id="device-row-${device.device_id}">
               <div class="hw-col-device">
-                <div class="hw-device-name">${device.name}</div>
-                <div class="hw-device-type">${device.device_type} • ${device.device_id}</div>
+                <div class="hw-device-name">${device.name} <span style="color: #667eea; font-weight: 600;">[${device.device_id}]</span></div>
+                <div class="hw-device-type">${device.device_type}</div>
               </div>
               <div class="hw-col-pin">
                 <input type="number" class="hw-input" value="${device.gpio_pin}" 
