@@ -2451,25 +2451,32 @@
       };
       
       try {
+        let response;
         if (selectedPresetId) {
-          await fetch(`/api/presets/${selectedPresetId}`, {
+          response = await fetch(`/api/presets/${selectedPresetId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
         } else {
-          await fetch('/api/presets', {
+          response = await fetch('/api/presets', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
         }
         
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+          throw new Error(errorData.detail || `Server returned ${response.status}`);
+        }
+        
+        showToast('Preset saved successfully!', 'success');
         await loadAllPresets();
         await loadPresets();
       } catch (err) {
         console.error('Failed to save preset:', err);
-        showToast('Failed to save preset. Check console for details.', 'error');
+        showToast(`Failed to save preset: ${err.message}`, 'error');
       }
     }
     
