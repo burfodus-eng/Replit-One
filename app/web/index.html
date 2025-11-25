@@ -816,31 +816,31 @@
 
     .hardware-table {
       background: white;
-      border-radius: 16px;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
     }
 
     .hardware-table-header {
       display: grid;
-      grid-template-columns: 180px 100px 140px 180px 180px minmax(220px, 1fr);
-      gap: 12px;
-      padding: 16px 20px;
+      grid-template-columns: 90px 120px 70px 70px 80px 110px 100px minmax(140px, 1fr);
+      gap: 8px;
+      padding: 10px 12px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      font-weight: 700;
-      font-size: 13px;
+      font-weight: 600;
+      font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
     }
 
     .hardware-table-row {
       display: grid;
-      grid-template-columns: 180px 100px 140px 180px 180px minmax(220px, 1fr);
-      gap: 12px;
-      padding: 20px;
+      grid-template-columns: 90px 120px 70px 70px 80px 110px 100px minmax(140px, 1fr);
+      gap: 8px;
+      padding: 10px 12px;
       border-bottom: 1px solid #e2e8f0;
-      align-items: flex-start;
+      align-items: center;
       transition: background 0.2s;
     }
 
@@ -854,24 +854,25 @@
 
     .hw-device-name {
       font-weight: 700;
-      font-size: 16px;
-      color: #2d3748;
-      margin-bottom: 4px;
+      font-size: 12px;
+      color: #667eea;
+      margin-bottom: 2px;
     }
 
     .hw-device-type {
-      font-size: 12px;
+      font-size: 9px;
       color: #718096;
       font-weight: 500;
+      text-transform: uppercase;
     }
 
     .hw-input, .hw-input-small, .hw-select {
       width: 100%;
-      padding: 10px 12px;
-      border: 2px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
+      padding: 6px 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
       color: #2d3748;
       background: white;
       transition: all 0.2s;
@@ -880,95 +881,99 @@
     .hw-input:focus, .hw-input-small:focus, .hw-select:focus {
       outline: none;
       border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
     }
 
     .hw-range-inputs {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
     }
 
     .hw-input-small {
       flex: 1;
-      min-width: 70px;
+      min-width: 40px;
+      padding: 6px 4px;
+      text-align: center;
     }
 
     .hw-range-separator {
       color: #a0aec0;
       font-weight: 600;
-      font-size: 16px;
+      font-size: 11px;
     }
 
     .hw-na {
       color: #cbd5e0;
-      font-size: 20px;
+      font-size: 14px;
       text-align: center;
       display: block;
     }
 
-    /* Hardware table column alignment - Updated v1.7.2 */
-    .hw-col-device,
+    /* Hardware table column alignment - Updated v1.7.3 */
+    .hw-col-device {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .hw-col-channel-name,
     .hw-col-pin,
+    .hw-col-monitor-pin,
     .hw-col-freq,
     .hw-col-intensity,
-    .hw-col-voltage,
-    .hw-col-actions {
+    .hw-col-voltage {
       display: flex;
       align-items: center;
     }
 
     .hw-col-actions {
-      gap: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
       justify-content: flex-end;
+      flex-wrap: nowrap;
     }
 
     .hw-btn {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 10px 16px;
+      justify-content: center;
+      padding: 5px 8px;
       border: none;
-      border-radius: 8px;
+      border-radius: 4px;
       font-weight: 600;
-      font-size: 13px;
+      font-size: 10px;
       cursor: pointer;
       transition: all 0.2s;
       white-space: nowrap;
     }
 
-    .hw-btn span {
-      font-size: 16px;
-    }
-
     .hw-btn-save {
-      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      background: #48bb78;
       color: white;
     }
 
     .hw-btn-save:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+      background: #38a169;
     }
 
     .hw-btn-test {
-      background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+      background: #4299e1;
       color: white;
     }
 
     .hw-btn-test:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+      background: #3182ce;
     }
 
     .hw-btn-delete {
-      background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+      background: #f56565;
       color: white;
     }
 
     .hw-btn-delete:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+      background: #e53e3e;
     }
 
     .hardware-table-wrapper {
@@ -977,14 +982,14 @@
     }
 
     .settings-tab {
-      padding: 12px 24px;
+      padding: 8px 16px;
       border: none;
       background: transparent;
       color: #a0aec0;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 12px;
       cursor: pointer;
-      border-bottom: 3px solid transparent;
+      border-bottom: 2px solid transparent;
       transition: all 0.2s;
     }
 
@@ -998,19 +1003,9 @@
       border-bottom-color: #667eea;
     }
 
-    .hw-col-channel-name {
-      display: flex;
-      align-items: center;
-    }
-
-    .hw-col-monitor-pin {
-      display: flex;
-      align-items: center;
-    }
-
     @media (max-width: 1200px) {
       .hardware-table {
-        min-width: 1120px;
+        min-width: 900px;
       }
     }
 
@@ -3578,35 +3573,48 @@
       input.click();
     }
 
+    function sortDevicesByChannel(devices) {
+      return [...devices].sort((a, b) => {
+        const aNum = parseInt(a.device_id.replace(/\D/g, '')) || 0;
+        const bNum = parseInt(b.device_id.replace(/\D/g, '')) || 0;
+        const aType = a.device_type;
+        const bType = b.device_type;
+        if (aType !== bType) return aType === 'WAVEMAKER' ? -1 : 1;
+        return aNum - bNum;
+      });
+    }
+
     function renderHardwareDevices(devices) {
       const container = document.getElementById('hardwareDevicesList');
       if (!devices || devices.length === 0) {
-        container.innerHTML = '<p style="color: #718096; text-align: center; padding: 32px;">No devices in this category. Click "Add Device" to get started or switch tabs.</p>';
+        container.innerHTML = '<p style="color: #718096; text-align: center; padding: 24px; font-size: 12px;">No devices in this category. Click "Add Device" to get started.</p>';
         return;
       }
+
+      const sortedDevices = sortDevicesByChannel(devices);
 
       container.innerHTML = `
         <div class="hardware-table">
           <div class="hardware-table-header">
             <div class="hw-col-device">Device</div>
-            <div class="hw-col-channel-name">Channel Name</div>
-            <div class="hw-col-pin">GPIO Pin</div>
-            <div class="hw-col-monitor-pin">Monitor Pin</div>
-            <div class="hw-col-freq">PWM Freq (Hz)</div>
-            <div class="hw-col-intensity">Intensity Range</div>
-            <div class="hw-col-voltage">Voltage Range</div>
+            <div class="hw-col-channel-name">Label</div>
+            <div class="hw-col-pin">GPIO</div>
+            <div class="hw-col-monitor-pin">Monitor</div>
+            <div class="hw-col-freq">Freq Hz</div>
+            <div class="hw-col-intensity">Intensity</div>
+            <div class="hw-col-voltage">Voltage</div>
             <div class="hw-col-actions">Actions</div>
           </div>
-          ${devices.map(device => `
+          ${sortedDevices.map(device => `
             <div class="hardware-table-row" id="device-row-${device.device_id}">
               <div class="hw-col-device">
-                <div class="hw-device-name">${device.name} <span style="color: #667eea; font-weight: 600;">[${device.device_id}]</span></div>
+                <div class="hw-device-name">${device.device_id}</div>
                 <div class="hw-device-type">${device.device_type}</div>
               </div>
               <div class="hw-col-channel-name">
                 <input type="text" class="hw-input" value="${device.channel_name || ''}" 
                        onchange="updateDeviceField('${device.device_id}', 'channel_name', this.value)"
-                       placeholder="${device.device_type === 'WAVEMAKER' ? 'e.g., Front Left' : 'Optional'}">
+                       placeholder="Name">
               </div>
               <div class="hw-col-pin">
                 <input type="number" class="hw-input" value="${device.gpio_pin}" 
@@ -3616,7 +3624,7 @@
               <div class="hw-col-monitor-pin">
                 <input type="number" class="hw-input" value="${device.gpio_pin_monitor || ''}" 
                        onchange="updateDeviceField('${device.device_id}', 'gpio_pin_monitor', this.value)"
-                       min="0" max="40" placeholder="None">
+                       min="0" max="40" placeholder="-">
               </div>
               <div class="hw-col-freq">
                 <input type="number" class="hw-input" value="${device.pwm_freq_hz}" 
@@ -3627,34 +3635,28 @@
                 <div class="hw-range-inputs">
                   <input type="number" step="0.01" class="hw-input-small" value="${device.min_intensity}" 
                          onchange="updateDeviceField('${device.device_id}', 'min_intensity', this.value)" 
-                         min="0" max="1" placeholder="Min">
-                  <span class="hw-range-separator">—</span>
+                         min="0" max="1">
+                  <span class="hw-range-separator">-</span>
                   <input type="number" step="0.01" class="hw-input-small" value="${device.max_intensity}" 
                          onchange="updateDeviceField('${device.device_id}', 'max_intensity', this.value)" 
-                         min="0" max="1" placeholder="Max">
+                         min="0" max="1">
                 </div>
               </div>
               <div class="hw-col-voltage">
                 <div class="hw-range-inputs">
                   <input type="number" step="0.1" class="hw-input-small" value="${device.volts_min}" 
                          onchange="updateDeviceField('${device.device_id}', 'volts_min', this.value)" 
-                         min="0" max="10" placeholder="Min">
-                  <span class="hw-range-separator">—</span>
+                         min="0" max="10">
+                  <span class="hw-range-separator">-</span>
                   <input type="number" step="0.1" class="hw-input-small" value="${device.volts_max}" 
                          onchange="updateDeviceField('${device.device_id}', 'volts_max', this.value)" 
-                         min="0" max="10" placeholder="Max">
+                         min="0" max="10">
                 </div>
               </div>
               <div class="hw-col-actions">
-                <button class="hw-btn hw-btn-test" onclick="testDevice('${device.device_id}', ${device.gpio_pin})" title="Test at 50% brightness">
-                  <span>⚡</span> Test
-                </button>
-                <button class="hw-btn hw-btn-save" onclick="saveDeviceSettings('${device.device_id}')">
-                  <span>💾</span> Save
-                </button>
-                <button class="hw-btn hw-btn-delete" onclick="deleteDevice('${device.device_id}')">
-                  <span>🗑️</span> Delete
-                </button>
+                <button class="hw-btn hw-btn-test" onclick="testDevice('${device.device_id}', ${device.gpio_pin})" title="Test 50%">Test</button>
+                <button class="hw-btn hw-btn-save" onclick="saveDeviceSettings('${device.device_id}')" title="Save">Save</button>
+                <button class="hw-btn hw-btn-delete" onclick="deleteDevice('${device.device_id}')" title="Delete">Del</button>
               </div>
             </div>
           `).join('')}
