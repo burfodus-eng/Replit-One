@@ -72,17 +72,21 @@
       min-height: 100vh;
     }
     
-    body::before {
-      content: '';
+    #backgroundImage {
       position: absolute;
       top: 0;
       left: 0;
-      right: 0;
-      min-height: 100vh;
-      background: url('/ui/assets/background.jpg') no-repeat center top;
-      background-size: 100% auto;
+      width: 100%;
+      height: auto;
       z-index: -1;
       pointer-events: none;
+      transition: none;
+    }
+    
+    #backgroundImage.fixed-bottom {
+      position: fixed;
+      top: auto;
+      bottom: 0;
     }
     
     /* Theme: Light (default) - very subtle white overlay on cards */
@@ -1761,6 +1765,7 @@
   </style>
 </head>
 <body>
+  <img id="backgroundImage" src="/ui/assets/background.jpg" alt="">
   <div id="toast" class="toast-notification"></div>
   <div class="container">
     <header>
@@ -4408,7 +4413,47 @@
       }
     }
 
+    function initBackgroundScroll() {
+      const bgImage = document.getElementById('backgroundImage');
+      if (!bgImage) return;
+      
+      let imageHeight = 0;
+      
+      bgImage.onload = function() {
+        imageHeight = bgImage.offsetHeight;
+        handleScroll();
+      };
+      
+      if (bgImage.complete) {
+        imageHeight = bgImage.offsetHeight;
+      }
+      
+      function handleScroll() {
+        if (!imageHeight) {
+          imageHeight = bgImage.offsetHeight;
+        }
+        
+        const scrollY = window.scrollY;
+        const viewportHeight = window.innerHeight;
+        const stopPoint = imageHeight - viewportHeight;
+        
+        if (stopPoint > 0 && scrollY >= stopPoint) {
+          bgImage.classList.add('fixed-bottom');
+        } else {
+          bgImage.classList.remove('fixed-bottom');
+        }
+      }
+      
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      window.addEventListener('resize', function() {
+        imageHeight = bgImage.offsetHeight;
+        handleScroll();
+      });
+    }
+
     function init() {
+      initBackgroundScroll();
+      
       updateClock();
       setInterval(updateClock, 1000);
       
