@@ -74,11 +74,11 @@
     
     body::before {
       content: '';
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: 100vh;
+      min-height: 100vh;
       background: url('/ui/assets/background.jpg') no-repeat center top;
       background-size: 100% auto;
       z-index: -1;
@@ -135,7 +135,7 @@
     .site-title {
       font-size: 28px;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--primary-violet) 50%, var(--primary-magenta) 100%);
+      background: linear-gradient(135deg, #4fc3f7 0%, #9575cd 50%, #f06292 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -143,8 +143,7 @@
       align-items: center;
       gap: 12px;
       letter-spacing: -0.5px;
-      text-shadow: 0 0 15px rgba(92, 184, 226, 0.35);
-      filter: drop-shadow(0 0 5px rgba(138, 95, 214, 0.35));
+      filter: drop-shadow(0 0 8px rgba(79, 195, 247, 0.5)) drop-shadow(0 0 3px rgba(149, 117, 205, 0.4));
     }
 
     .menu-button {
@@ -238,10 +237,10 @@
     .live-clock {
       font-size: 24px;
       font-weight: 600;
-      color: var(--primary-cyan);
+      color: #4fc3f7;
       letter-spacing: 0.5px;
       font-variant-numeric: tabular-nums;
-      text-shadow: 0 0 10px rgba(92, 184, 226, 0.42);
+      text-shadow: 0 0 12px rgba(79, 195, 247, 0.6), 0 0 4px rgba(79, 195, 247, 0.4);
     }
 
     .health-indicator {
