@@ -147,6 +147,53 @@ class DeviceRegistry:
         self.leds: Dict[str, PWMDevice] = {}
         self.mode = GPIO_MODE
     
+    def _get_gpio_map(self, exclude_device_id: Optional[str] = None) -> Dict[int, str]:
+        """
+        Get map of GPIO pins to device IDs currently in use.
+        
+        Args:
+            exclude_device_id: Optionally exclude a device (for reload scenarios)
+            
+        Returns:
+            Dict mapping GPIO pin numbers to device IDs
+        """
+        gpio_map: Dict[int, str] = {}
+        
+        for device_id, device in self.wavemakers.items():
+            if device_id != exclude_device_id:
+                gpio_map[device.config.gpio_pin] = device_id
+                if device.config.gpio_pin_monitor is not None:
+                    gpio_map[device.config.gpio_pin_monitor] = f"{device_id} (monitor)"
+        
+        for device_id, device in self.leds.items():
+            if device_id != exclude_device_id:
+                gpio_map[device.config.gpio_pin] = device_id
+                if device.config.gpio_pin_monitor is not None:
+                    gpio_map[device.config.gpio_pin_monitor] = f"{device_id} (monitor)"
+        
+        return gpio_map
+    
+    def _check_gpio_conflict(self, config: DeviceConfig, exclude_device_id: Optional[str] = None) -> Optional[str]:
+        """
+        Check if config's GPIO pins conflict with existing devices.
+        
+        Args:
+            config: Device configuration to check
+            exclude_device_id: Optionally exclude a device (for reload scenarios)
+            
+        Returns:
+            Conflict message if conflict found, None otherwise
+        """
+        gpio_map = self._get_gpio_map(exclude_device_id)
+        
+        if config.gpio_pin in gpio_map:
+            return f"GPIO {config.gpio_pin} already in use by {gpio_map[config.gpio_pin]}"
+        
+        if config.gpio_pin_monitor is not None and config.gpio_pin_monitor in gpio_map:
+            return f"GPIO {config.gpio_pin_monitor} (monitor) already in use by {gpio_map[config.gpio_pin_monitor]}"
+        
+        return None
+    
     def register_wavemaker(self, device_id: str, config: DeviceConfig) -> PWMDevice:
         """
         Register a wavemaker device.
@@ -157,7 +204,15 @@ class DeviceRegistry:
             
         Returns:
             Created PWMDevice instance
+            
+        Raises:
+            ValueError: If GPIO pin is already in use by another device
         """
+        conflict = self._check_gpio_conflict(config)
+        if conflict:
+            logging.error(f"Cannot register wavemaker {device_id}: {conflict}")
+            raise ValueError(f"Cannot register wavemaker {device_id}: {conflict}")
+        
         device = PWMDevice(config)
         self.wavemakers[device_id] = device
         logging.info(f"Registered wavemaker {device_id}")
@@ -173,7 +228,15 @@ class DeviceRegistry:
             
         Returns:
             Created PWMDevice instance
+            
+        Raises:
+            ValueError: If GPIO pin is already in use by another device
         """
+        conflict = self._check_gpio_conflict(config)
+        if conflict:
+            logging.error(f"Cannot register LED {device_id}: {conflict}")
+            raise ValueError(f"Cannot register LED {device_id}: {conflict}")
+        
         device = PWMDevice(config)
         self.leds[device_id] = device
         logging.info(f"Registered LED {device_id}")
@@ -288,7 +351,16 @@ class DeviceRegistry:
             
         Returns:
             Reloaded PWMDevice instance
+            
+        Raises:
+            ValueError: If new GPIO pin conflicts with another device
         """
+        # Check for GPIO conflicts (exclude self since we're reloading)
+        conflict = self._check_gpio_conflict(config, exclude_device_id=device_id)
+        if conflict:
+            logging.error(f"Cannot reload {device_id}: {conflict}")
+            raise ValueError(f"Cannot reload {device_id}: {conflict}")
+        
         # Clean up old device
         if device_type == 'WAVEMAKER':
             old_device = self.wavemakers.get(device_id)

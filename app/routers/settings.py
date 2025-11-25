@@ -319,8 +319,66 @@ async def import_config(config_data: ConfigImportData, request: Request):
     from app.services.storage import DeviceConfigRow, WavemakerPreset, ScheduledTaskRow
     from app.services.hw_devices import registry, DeviceConfig
     from app.hw_scheduler.realtime_loop import set_led_follow
+    from fastapi import HTTPException
     
     store = request.app.state.store
+    
+    # Pre-flight GPIO conflict validation
+    if config_data.devices:
+        gpio_conflicts = []
+        
+        # Build map of post-import GPIO assignments
+        # Start with existing devices not in import
+        import_device_ids = {d.get('device_id') for d in config_data.devices if d.get('device_id')}
+        existing_devices = store.get_all_device_configs()
+        
+        # GPIO assignments: pin -> device_id
+        gpio_map: dict[int, str] = {}
+        
+        # Add existing devices that won't be updated by import
+        for dev in existing_devices:
+            if dev.device_id not in import_device_ids:
+                if dev.gpio_pin is not None:
+                    gpio_map[dev.gpio_pin] = dev.device_id
+                if dev.gpio_pin_monitor is not None:
+                    gpio_map[dev.gpio_pin_monitor] = f"{dev.device_id} (monitor)"
+        
+        # Check incoming devices for conflicts
+        for device_data in config_data.devices:
+            device_id = device_data.get('device_id')
+            if not device_id:
+                continue
+                
+            gpio_pin = device_data.get('gpio_pin')
+            gpio_pin_monitor = device_data.get('gpio_pin_monitor')
+            
+            # Check main GPIO pin
+            if gpio_pin is not None:
+                if gpio_pin in gpio_map:
+                    conflicting_device = gpio_map[gpio_pin]
+                    gpio_conflicts.append(f"GPIO {gpio_pin}: {device_id} conflicts with {conflicting_device}")
+                else:
+                    gpio_map[gpio_pin] = device_id
+            
+            # Check monitor GPIO pin
+            if gpio_pin_monitor is not None:
+                if gpio_pin_monitor in gpio_map:
+                    conflicting_device = gpio_map[gpio_pin_monitor]
+                    gpio_conflicts.append(f"GPIO {gpio_pin_monitor}: {device_id} (monitor) conflicts with {conflicting_device}")
+                else:
+                    gpio_map[gpio_pin_monitor] = f"{device_id} (monitor)"
+        
+        # Reject import if any conflicts found
+        if gpio_conflicts:
+            logging.warning(f"[Import] Rejected due to GPIO conflicts: {gpio_conflicts}")
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "error": "GPIO pin conflicts detected",
+                    "conflicts": gpio_conflicts,
+                    "message": "Import aborted. No changes were made. Please fix the conflicting GPIO assignments in your config file."
+                }
+            )
     
     results = {
         "devices_imported": 0,
