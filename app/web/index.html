@@ -70,16 +70,22 @@
     }
     
     #backgroundImage {
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: auto;
-      min-height: 100vh;
       z-index: -1;
       pointer-events: none;
-      object-fit: cover;
-      object-position: top center;
+      will-change: transform;
+      transform: translateZ(0);
+    }
+    
+    #backgroundImage.fixed-bottom {
+      position: fixed;
+      top: auto;
+      bottom: 0;
+      transform: translateZ(0);
     }
     
     /* Theme: Light - light mauve-tinted overlay on cards */
@@ -4439,7 +4445,58 @@
       }
     }
 
+    function initBackgroundScroll() {
+      const bgImage = document.getElementById('backgroundImage');
+      if (!bgImage) return;
+      
+      let imageHeight = 0;
+      let ticking = false;
+      
+      bgImage.onload = function() {
+        imageHeight = bgImage.offsetHeight;
+        handleScroll();
+      };
+      
+      if (bgImage.complete) {
+        imageHeight = bgImage.offsetHeight;
+      }
+      
+      function handleScroll() {
+        if (!imageHeight) {
+          imageHeight = bgImage.offsetHeight;
+        }
+        
+        const scrollY = window.scrollY;
+        const viewportHeight = window.innerHeight;
+        const stopPoint = imageHeight - viewportHeight;
+        
+        if (stopPoint > 0 && scrollY >= stopPoint) {
+          if (!bgImage.classList.contains('fixed-bottom')) {
+            bgImage.classList.add('fixed-bottom');
+          }
+        } else {
+          if (bgImage.classList.contains('fixed-bottom')) {
+            bgImage.classList.remove('fixed-bottom');
+          }
+        }
+        ticking = false;
+      }
+      
+      window.addEventListener('scroll', function() {
+        if (!ticking) {
+          requestAnimationFrame(handleScroll);
+          ticking = true;
+        }
+      }, { passive: true });
+      
+      window.addEventListener('resize', function() {
+        imageHeight = bgImage.offsetHeight;
+        handleScroll();
+      });
+    }
+
     function init() {
+      initBackgroundScroll();
       updateClock();
       setInterval(updateClock, 1000);
       
