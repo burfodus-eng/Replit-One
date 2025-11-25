@@ -63,14 +63,26 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-      background: url('/ui/assets/background.jpg') no-repeat center top;
-      background-size: 100% auto;
       background-color: #0b1026;
       color: var(--text-primary);
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       position: relative;
+      min-height: 100vh;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100vh;
+      background: url('/ui/assets/background.jpg') no-repeat center top;
+      background-size: 100% auto;
+      z-index: -1;
+      pointer-events: none;
     }
     
     /* Theme: Light (default) - very subtle white overlay on cards */
@@ -182,7 +194,7 @@
       align-items: center;
       gap: 12px;
       padding: 14px 18px;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--inner-bg, rgba(255, 255, 255, 0.02));
       border: 2px solid rgba(255, 255, 255, 0.1);
       border-radius: 14px;
       cursor: pointer;
@@ -896,7 +908,7 @@
       min-height: 48px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       font-family: inherit;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--inner-bg, rgba(255, 255, 255, 0.02));
       color: var(--text-primary);
     }
 
@@ -991,7 +1003,7 @@
     
     .preset-list-item {
       padding: 14px;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--inner-bg, rgba(255, 255, 255, 0.02));
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.12);
       cursor: pointer;
@@ -1238,7 +1250,7 @@
       font-size: 11px;
       font-weight: 500;
       color: var(--text-primary);
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--inner-bg, rgba(255, 255, 255, 0.02));
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -1531,7 +1543,7 @@
     .view-toggle-btn {
       flex: 1;
       padding: 10px 16px;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--inner-bg, rgba(255, 255, 255, 0.02));
       color: var(--text-secondary);
       border: 2px solid rgba(255, 255, 255, 0.15);
       border-radius: 10px;
@@ -1595,14 +1607,14 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--inner-bg, rgba(255, 255, 255, 0.02));
       border: none;
       font-variant-numeric: tabular-nums;
     }
 
     .calendar-cell {
       min-height: 44px;
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--inner-bg, rgba(255, 255, 255, 0.02));
       cursor: pointer;
       position: relative;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -3997,7 +4009,7 @@
     function loadThemeSettings() {
       const savedBg = localStorage.getItem('customBackground');
       if (savedBg) {
-        document.body.style.backgroundImage = `url('${savedBg}')`;
+        setBackgroundImage(savedBg);
         updateBgPreview(savedBg);
       }
       const savedTheme = localStorage.getItem('selectedTheme') || 'light';
@@ -4008,6 +4020,16 @@
     function applyTheme(themeId) {
       document.body.classList.remove('theme-light', 'theme-dark');
       document.body.classList.add(`theme-${themeId}`);
+    }
+    
+    function setBackgroundImage(url) {
+      let styleEl = document.getElementById('bg-style');
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'bg-style';
+        document.head.appendChild(styleEl);
+      }
+      styleEl.textContent = `body::before { background-image: url('${url}') !important; }`;
     }
 
     function updateBgPreview(src) {
@@ -4038,7 +4060,7 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         const dataUrl = e.target.result;
-        document.body.style.backgroundImage = `url('${dataUrl}')`;
+        setBackgroundImage(dataUrl);
         localStorage.setItem('customBackground', dataUrl);
         updateBgPreview(dataUrl);
         showToast('Background updated successfully', 'success');
@@ -4048,7 +4070,7 @@
 
     function resetBackground() {
       localStorage.removeItem('customBackground');
-      document.body.style.backgroundImage = `url('${DEFAULT_BACKGROUND}')`;
+      setBackgroundImage(DEFAULT_BACKGROUND);
       document.getElementById('bgPreview').style.display = 'none';
       showToast('Background reset to default', 'success');
     }
