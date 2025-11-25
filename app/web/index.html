@@ -89,6 +89,18 @@
       transform: translateX(-50%) translateZ(0);
     }
     
+    #backgroundImage.landscape-mode {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%) translateZ(0);
+      min-height: 100vh;
+      min-width: 100%;
+      width: auto;
+      height: auto;
+      object-fit: cover;
+    }
+    
     /* Theme: Light - light mauve-tinted overlay on cards */
     body.theme-light {
       --card-bg: rgba(245, 240, 252, 0.70);
@@ -4065,13 +4077,8 @@
     function setBackgroundImage(url) {
       const bgImage = document.getElementById('backgroundImage');
       if (bgImage) {
-        // Reset all styles before loading new image
-        bgImage.style.position = 'absolute';
-        bgImage.style.minHeight = '';
-        bgImage.style.minWidth = '100%';
-        bgImage.style.width = '';
-        bgImage.style.objectFit = '';
-        bgImage.classList.remove('fixed-bottom');
+        // Reset classes before loading new image - let CSS handle everything
+        bgImage.classList.remove('fixed-bottom', 'landscape-mode');
         bgImage.src = url;
       }
     }
@@ -4474,30 +4481,18 @@
         // Use fixed cover mode - image stays put, content scrolls over it
         if (imageHeightAtFullWidth <= viewportHeight) {
           isLandscape = true;
-          bgImage.style.position = 'fixed';
-          bgImage.style.top = '0';
-          bgImage.style.bottom = '';
-          bgImage.style.minHeight = '100vh';
-          bgImage.style.minWidth = '100%';
-          bgImage.style.width = 'auto';
-          bgImage.style.objectFit = 'cover';
+          bgImage.classList.add('landscape-mode');
           bgImage.classList.remove('fixed-bottom');
         } else {
-          // Tall image: scrolls with page, locks at bottom
+          // Tall image: scrolls with page, locks at bottom (original behavior)
           isLandscape = false;
-          bgImage.style.position = 'absolute';
-          bgImage.style.top = '0';
-          bgImage.style.bottom = '';
-          bgImage.style.minHeight = '';
-          bgImage.style.minWidth = '100%';
-          bgImage.style.width = '';
-          bgImage.style.objectFit = '';
+          bgImage.classList.remove('landscape-mode');
           handleScroll();
         }
       }
       
       function handleScroll() {
-        if (isLandscape) return; // Landscape images don't scroll
+        if (isLandscape) return;
         
         const scrollY = window.scrollY;
         const viewportHeight = window.innerHeight;
