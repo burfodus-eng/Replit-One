@@ -366,8 +366,11 @@ async def import_config(config_data: ConfigImportData, request: Request):
     
     # CLEAN SLATE: Remove ALL existing devices before importing new ones
     # This ensures the imported config is the complete system state
-    if config_data.devices:
-        existing_devices = store.get_all_device_configs()
+    # Always clear devices when a devices array is present (even if empty)
+    devices_cleared = 0
+    existing_devices = store.get_all_device_configs()
+    if config_data.devices is not None:
+        devices_cleared = len(existing_devices)
         for dev in existing_devices:
             try:
                 # Unregister from hardware registry (stops output, cleans up GPIO)
@@ -379,7 +382,7 @@ async def import_config(config_data: ConfigImportData, request: Request):
                 logging.warning(f"[Import] Error clearing device {dev.device_id}: {e}")
     
     results = {
-        "devices_cleared": len(existing_devices) if config_data.devices else 0,
+        "devices_cleared": devices_cleared,
         "devices_imported": 0,
         "presets_imported": 0,
         "presets_skipped": 0,
