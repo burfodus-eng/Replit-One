@@ -96,6 +96,11 @@
       --text-secondary: #4a4a6a;
       --dropdown-bg: rgba(245, 240, 252, 0.95);
       --dropdown-hover: rgba(235, 228, 248, 0.95);
+      --glow-color: rgba(255, 255, 255, 0.9);
+      --glow-color-strong: rgba(255, 255, 255, 1);
+      --canvas-text: #1a1a2e;
+      --canvas-grid: rgba(100, 80, 120, 0.3);
+      --canvas-line: #7c3aed;
     }
     
     /* Theme: Dark (default) - dark mauve-tinted overlay on cards */
@@ -108,6 +113,11 @@
       --text-secondary: #94a3b8;
       --dropdown-bg: rgba(20, 25, 50, 0.95);
       --dropdown-hover: rgba(30, 35, 60, 0.95);
+      --glow-color: rgba(0, 0, 0, 0.6);
+      --glow-color-strong: rgba(0, 0, 0, 0.8);
+      --canvas-text: rgba(255, 255, 255, 0.9);
+      --canvas-grid: rgba(255, 255, 255, 0.15);
+      --canvas-line: rgba(255, 255, 255, 0.9);
     }
 
     .container {
@@ -154,7 +164,7 @@
       align-items: center;
       gap: 12px;
       letter-spacing: -0.5px;
-      filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 3px rgba(0, 0, 0, 0.4));
+      filter: drop-shadow(0 0 8px var(--glow-color, rgba(0, 0, 0, 0.5))) drop-shadow(0 0 3px var(--glow-color, rgba(0, 0, 0, 0.4)));
     }
 
     .menu-button {
@@ -251,7 +261,7 @@
       color: #4fc3f7;
       letter-spacing: 0.5px;
       font-variant-numeric: tabular-nums;
-      text-shadow: 0 0 12px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.4);
+      text-shadow: 0 0 12px var(--glow-color-strong, rgba(0, 0, 0, 0.6)), 0 0 4px var(--glow-color, rgba(0, 0, 0, 0.4));
     }
 
     .health-indicator {
@@ -2715,8 +2725,20 @@
       drawFlowPatterns();
     }
 
+    function getThemeCanvasColors() {
+      const style = getComputedStyle(document.body);
+      return {
+        text: style.getPropertyValue('--canvas-text').trim() || 'rgba(255, 255, 255, 0.9)',
+        grid: style.getPropertyValue('--canvas-grid').trim() || 'rgba(255, 255, 255, 0.15)',
+        line: style.getPropertyValue('--canvas-line').trim() || 'rgba(255, 255, 255, 0.9)',
+        isLight: document.body.classList.contains('theme-light')
+      };
+    }
+
     function drawFlowPatterns() {
       if (!activePreset || !wavemakersData) return;
+      
+      const themeColors = getThemeCanvasColors();
       
       wavemakersData.forEach(wm => {
         const canvas = document.getElementById(`flow-canvas-${wm.id}`);
@@ -2728,21 +2750,21 @@
         
         ctx.clearRect(0, 0, width, height);
         
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillStyle = themeColors.isLight ? 'rgba(100, 80, 120, 0.08)' : 'rgba(255, 255, 255, 0.1)';
         ctx.fillRect(0, 0, width, height);
         
         const wavemakerKey = `wavemaker_${wm.id + 1}`;
         const curve = activePreset.flow_curves[wavemakerKey];
         
         if (!curve || curve.length === 0) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+          ctx.fillStyle = themeColors.text;
           ctx.font = '14px system-ui';
           ctx.textAlign = 'center';
           ctx.fillText('No flow pattern', width / 2, height / 2);
           return;
         }
         
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.strokeStyle = themeColors.line;
         ctx.lineWidth = 3;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -2761,7 +2783,7 @@
         }
         ctx.stroke();
         
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.fillStyle = themeColors.isLight ? 'rgba(124, 58, 237, 0.2)' : 'rgba(255, 255, 255, 0.3)';
         ctx.beginPath();
         ctx.moveTo(0, height);
         for (let pct = 0; pct <= 100; pct += 0.5) {
@@ -3800,11 +3822,12 @@
       const ctx = canvas.getContext('2d');
       const width = canvas.width = canvas.offsetWidth;
       const height = canvas.height = 400;
+      const themeColors = getThemeCanvasColors();
       
       ctx.clearRect(0, 0, width, height);
       
       if (!data || data.length === 0) {
-        ctx.fillStyle = '#a0aec0';
+        ctx.fillStyle = themeColors.text;
         ctx.font = '16px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('No data available', width / 2, height / 2);
@@ -3823,7 +3846,7 @@
       const chartWidth = width - 2 * padding;
       const chartHeight = height - 2 * padding;
       
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.strokeStyle = themeColors.grid;
       ctx.lineWidth = 1;
       for (let i = 0; i <= 4; i++) {
         const y = padding + (chartHeight / 4) * i;
@@ -3833,7 +3856,7 @@
         ctx.stroke();
       }
       
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillStyle = themeColors.text;
       ctx.font = '12px Arial';
       ctx.textAlign = 'right';
       for (let i = 0; i <= 4; i++) {
@@ -3899,11 +3922,11 @@
         const y = padding + idx * 25;
         ctx.fillStyle = colors[arrayId];
         ctx.fillRect(x, y - 8, 15, 15);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.fillStyle = themeColors.text;
         ctx.fillText(arrayId, x + 20, y + 4);
       });
       
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillStyle = themeColors.text;
       ctx.font = '12px Arial';
       ctx.textAlign = 'center';
       if (data.length > 1) {
@@ -3923,11 +3946,12 @@
       const ctx = canvas.getContext('2d');
       const width = canvas.width = canvas.offsetWidth;
       const height = canvas.height = 400;
+      const themeColors = getThemeCanvasColors();
       
       ctx.clearRect(0, 0, width, height);
       
       if (!data || data.length === 0) {
-        ctx.fillStyle = '#a0aec0';
+        ctx.fillStyle = themeColors.text;
         ctx.font = '16px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('No data available', width / 2, height / 2);
@@ -3939,7 +3963,7 @@
       const chartWidth = width - 2 * padding;
       const chartHeight = height - 2 * padding;
       
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.strokeStyle = themeColors.grid;
       ctx.lineWidth = 1;
       for (let i = 0; i <= 4; i++) {
         const y = padding + (chartHeight / 4) * i;
@@ -3949,7 +3973,7 @@
         ctx.stroke();
       }
       
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillStyle = themeColors.text;
       ctx.font = '12px Arial';
       ctx.textAlign = 'right';
       for (let i = 0; i <= 4; i++) {
@@ -3978,7 +4002,7 @@
         ctx.fillRect(x - 2, y - 2, 4, 4);
       }
       
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillStyle = themeColors.text;
       ctx.font = '12px Arial';
       ctx.textAlign = 'center';
       if (data.length > 1) {

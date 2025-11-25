@@ -4,6 +4,7 @@
 Reef Controller is a sophisticated web-based application built with FastAPI, designed for real-time monitoring and control of reef aquarium equipment.
 
 ## Recent Changes
+- **v2.2.3** (2025-11-25): Light theme readability fixes - Title/clock glow now uses white for light theme, graph/chart labels use dark text (#1a1a2e), wavemaker flow patterns use violet lines (#7c3aed) instead of white. Added theme-aware CSS variables for canvas rendering (--canvas-text, --canvas-grid, --canvas-line, --glow-color).
 - **v2.2.2** (2025-11-25): Header readability fix - Title and clock now use brighter colors (#4fc3f7 cyan, #9575cd violet, #f06292 magenta gradient) with stronger glow effects for better visibility. Background now scrolls with page content (position: absolute instead of fixed).
 - **v2.2.1** (2025-11-25): Color refinement - Reduced saturation of primary neon colors by ~20% (cyan #5cb8e2, violet #8a5fd6, magenta #d76fa1) for better blending with background. Dark Theme now uses grey overlay (rgba 51,51,51,0.28 for cards, 0.20 for inner) instead of pure black for more natural look.
 - **v2.2.0** (2025-11-25): Theme system with Light/Dark modes - Background now scrolls with page (full width, no fixed), removed ALL backdrop blur from cards for clearer background visibility. Light Theme uses very subtle white overlay (rgba 255,255,255,0.03 for cards, 0.02 for inner elements), Dark Theme uses subtle dark overlay (rgba 0,0,0,0.25 for cards, 0.15 for inner elements). Theme persists in localStorage. Settings page has theme selector dropdown.
