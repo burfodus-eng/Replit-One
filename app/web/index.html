@@ -1602,7 +1602,7 @@
       grid-template-columns: 60px repeat(7, 1fr);
       gap: 2px;
       min-width: 600px;
-      background: rgba(0, 0, 0, 0.2);
+      background: var(--border-color, rgba(0, 0, 0, 0.2));
       padding: 2px;
       border-radius: 12px;
     }
@@ -1898,7 +1898,7 @@
           <button class="btn-primary" onclick="loadLogs()">Refresh</button>
         </div>
       </div>
-      <div id="logsContent" style="font-family: monospace; font-size: 12px; max-height: 70vh; overflow-y: auto; background: #1a202c; color: #e2e8f0; padding: 16px; border-radius: 8px; white-space: pre-wrap;"></div>
+      <div id="logsContent" style="font-family: monospace; font-size: 12px; max-height: 70vh; overflow-y: auto; background: var(--inner-bg); color: var(--text-primary); padding: 16px; border-radius: 8px; white-space: pre-wrap; border: 1px solid var(--border-color);"></div>
     </div>
   </div>
 
@@ -1913,7 +1913,7 @@
         </div>
       </div>
       
-      <div class="settings-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid #2d3748;">
+      <div class="settings-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid var(--border-color);">
         <button class="settings-tab active" data-tab="wavemakers" onclick="switchSettingsTab('wavemakers', this)">Wavemakers</button>
         <button class="settings-tab" data-tab="leds" onclick="switchSettingsTab('leds', this)">LEDs</button>
         <button class="settings-tab" data-tab="all" onclick="switchSettingsTab('all', this)">All Devices</button>
@@ -3306,10 +3306,11 @@
       const ctx = canvas.getContext('2d');
       const width = canvas.width;
       const height = canvas.height;
+      const themeColors = getThemeCanvasColors();
       
       ctx.clearRect(0, 0, width, height);
       
-      ctx.strokeStyle = '#e2e8f0';
+      ctx.strokeStyle = themeColors.grid;
       ctx.lineWidth = 1;
       for (let i = 0; i <= 4; i++) {
         const y = (i / 4) * height;
