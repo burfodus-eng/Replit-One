@@ -1852,7 +1852,7 @@
       </div>
     </div>
 
-    <div class="wavemakers-section">
+    <div id="wavemakersSection" class="wavemakers-section">
       <div class="section-header">🌊 Wavemakers</div>
       
       <div class="preset-controls">
@@ -2287,6 +2287,7 @@
       }
       
       document.getElementById('dashboardPage').style.display = page === 'dashboard' ? 'grid' : 'none';
+      document.getElementById('wavemakersSection').style.display = page === 'dashboard' ? 'block' : 'none';
       document.getElementById('logsPage').style.display = page === 'logs' ? 'block' : 'none';
       document.getElementById('settingsPage').style.display = page === 'settings' ? 'block' : 'none';
       
