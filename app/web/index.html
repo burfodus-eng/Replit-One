@@ -70,20 +70,16 @@
     }
     
     #backgroundImage {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: auto;
+      min-height: 100vh;
       z-index: -1;
       pointer-events: none;
-      transition: none;
-    }
-    
-    #backgroundImage.fixed-bottom {
-      position: fixed;
-      top: auto;
-      bottom: 0;
+      object-fit: cover;
+      object-position: top center;
     }
     
     /* Theme: Light - light mauve-tinted overlay on cards */
@@ -4060,13 +4056,10 @@
     }
     
     function setBackgroundImage(url) {
-      let styleEl = document.getElementById('bg-style');
-      if (!styleEl) {
-        styleEl = document.createElement('style');
-        styleEl.id = 'bg-style';
-        document.head.appendChild(styleEl);
+      const bgImage = document.getElementById('backgroundImage');
+      if (bgImage) {
+        bgImage.src = url;
       }
-      styleEl.textContent = `body::before { background-image: url('${url}') !important; }`;
     }
 
     function updateBgPreview(src) {
@@ -4446,47 +4439,7 @@
       }
     }
 
-    function initBackgroundScroll() {
-      const bgImage = document.getElementById('backgroundImage');
-      if (!bgImage) return;
-      
-      let imageHeight = 0;
-      
-      bgImage.onload = function() {
-        imageHeight = bgImage.offsetHeight;
-        handleScroll();
-      };
-      
-      if (bgImage.complete) {
-        imageHeight = bgImage.offsetHeight;
-      }
-      
-      function handleScroll() {
-        if (!imageHeight) {
-          imageHeight = bgImage.offsetHeight;
-        }
-        
-        const scrollY = window.scrollY;
-        const viewportHeight = window.innerHeight;
-        const stopPoint = imageHeight - viewportHeight;
-        
-        if (stopPoint > 0 && scrollY >= stopPoint) {
-          bgImage.classList.add('fixed-bottom');
-        } else {
-          bgImage.classList.remove('fixed-bottom');
-        }
-      }
-      
-      window.addEventListener('scroll', handleScroll, { passive: true });
-      window.addEventListener('resize', function() {
-        imageHeight = bgImage.offsetHeight;
-        handleScroll();
-      });
-    }
-
     function init() {
-      initBackgroundScroll();
-      
       updateClock();
       setInterval(updateClock, 1000);
       
