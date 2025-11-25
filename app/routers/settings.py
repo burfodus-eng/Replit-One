@@ -315,7 +315,7 @@ async def export_config(request: Request):
 
 @router.post('/api/settings/import')
 async def import_config(config_data: ConfigImportData, request: Request):
-    """Import system configuration from JSON backup"""
+    """Import system configuration from JSON backup - performs clean slate import"""
     from app.services.storage import DeviceConfigRow, WavemakerPreset, ScheduledTaskRow
     from app.services.hw_devices import registry, DeviceConfig
     from app.hw_scheduler.realtime_loop import set_led_follow
@@ -323,27 +323,11 @@ async def import_config(config_data: ConfigImportData, request: Request):
     
     store = request.app.state.store
     
-    # Pre-flight GPIO conflict validation
+    # Validate incoming config for internal GPIO conflicts (within the import file itself)
     if config_data.devices:
         gpio_conflicts = []
-        
-        # Build map of post-import GPIO assignments
-        # Start with existing devices not in import
-        import_device_ids = {d.get('device_id') for d in config_data.devices if d.get('device_id')}
-        existing_devices = store.get_all_device_configs()
-        
-        # GPIO assignments: pin -> device_id
         gpio_map: dict[int, str] = {}
         
-        # Add existing devices that won't be updated by import
-        for dev in existing_devices:
-            if dev.device_id not in import_device_ids:
-                if dev.gpio_pin is not None:
-                    gpio_map[dev.gpio_pin] = dev.device_id
-                if dev.gpio_pin_monitor is not None:
-                    gpio_map[dev.gpio_pin_monitor] = f"{dev.device_id} (monitor)"
-        
-        # Check incoming devices for conflicts
         for device_data in config_data.devices:
             device_id = device_data.get('device_id')
             if not device_id:
@@ -352,7 +336,7 @@ async def import_config(config_data: ConfigImportData, request: Request):
             gpio_pin = device_data.get('gpio_pin')
             gpio_pin_monitor = device_data.get('gpio_pin_monitor')
             
-            # Check main GPIO pin
+            # Check main GPIO pin for conflicts within imported config
             if gpio_pin is not None:
                 if gpio_pin in gpio_map:
                     conflicting_device = gpio_map[gpio_pin]
@@ -360,7 +344,7 @@ async def import_config(config_data: ConfigImportData, request: Request):
                 else:
                     gpio_map[gpio_pin] = device_id
             
-            # Check monitor GPIO pin
+            # Check monitor GPIO pin for conflicts within imported config
             if gpio_pin_monitor is not None:
                 if gpio_pin_monitor in gpio_map:
                     conflicting_device = gpio_map[gpio_pin_monitor]
@@ -368,21 +352,35 @@ async def import_config(config_data: ConfigImportData, request: Request):
                 else:
                     gpio_map[gpio_pin_monitor] = f"{device_id} (monitor)"
         
-        # Reject import if any conflicts found
+        # Reject import if config file has internal conflicts
         if gpio_conflicts:
-            logging.warning(f"[Import] Rejected due to GPIO conflicts: {gpio_conflicts}")
+            logging.warning(f"[Import] Rejected due to internal GPIO conflicts in config file: {gpio_conflicts}")
             raise HTTPException(
                 status_code=409,
                 detail={
-                    "error": "GPIO pin conflicts detected",
+                    "error": "GPIO pin conflicts detected within import file",
                     "conflicts": gpio_conflicts,
-                    "message": "Import aborted. No changes were made. Please fix the conflicting GPIO assignments in your config file."
+                    "message": "Import aborted. The config file has duplicate GPIO assignments. Please fix the conflicts."
                 }
             )
     
+    # CLEAN SLATE: Remove ALL existing devices before importing new ones
+    # This ensures the imported config is the complete system state
+    if config_data.devices:
+        existing_devices = store.get_all_device_configs()
+        for dev in existing_devices:
+            try:
+                # Unregister from hardware registry (stops output, cleans up GPIO)
+                registry.unregister_device(dev.device_id)
+                # Delete from database
+                store.delete_device_config(dev.device_id)
+                logging.info(f"[Import] Cleared existing device: {dev.device_id}")
+            except Exception as e:
+                logging.warning(f"[Import] Error clearing device {dev.device_id}: {e}")
+    
     results = {
+        "devices_cleared": len(existing_devices) if config_data.devices else 0,
         "devices_imported": 0,
-        "devices_skipped": 0,
         "presets_imported": 0,
         "presets_skipped": 0,
         "tasks_imported": 0,
@@ -390,6 +388,7 @@ async def import_config(config_data: ConfigImportData, request: Request):
         "errors": []
     }
     
+    # Import all devices fresh (we've already cleared existing ones above)
     if config_data.devices:
         for device_data in config_data.devices:
             try:
@@ -397,55 +396,32 @@ async def import_config(config_data: ConfigImportData, request: Request):
                 if not device_id:
                     results["errors"].append("Device missing required 'device_id' field")
                     continue
-                    
-                existing = store.get_device_config(device_id)
                 
-                if existing:
-                    for key, value in device_data.items():
-                        if key != 'device_id' and hasattr(existing, key):
-                            setattr(existing, key, value)
-                    updated = store.update_device_config(device_id, **device_data)
-                    
-                    # Hot-reload device config (same logic as PUT endpoint)
-                    config = DeviceConfig(
-                        name=updated.name,
-                        gpio_pin=updated.gpio_pin,
-                        pwm_freq_hz=updated.pwm_freq_hz,
-                        min_intensity=updated.min_intensity,
-                        max_intensity=updated.max_intensity,
-                        volts_min=updated.volts_min,
-                        volts_max=updated.volts_max,
-                        gpio_pin_monitor=updated.gpio_pin_monitor,
-                        channel_name=updated.channel_name
-                    )
-                    registry.reload_device(device_id, config, updated.device_type)
-                    logging.info(f"[Import] Hot-reloaded existing device {device_id} with GPIO {updated.gpio_pin}")
-                    
-                    results["devices_skipped"] += 1
+                # Create new device in database
+                new_device = DeviceConfigRow(**device_data)
+                created = store.create_device_config(new_device)
+                
+                # Build config for hardware registry
+                config = DeviceConfig(
+                    name=created.name,
+                    gpio_pin=created.gpio_pin,
+                    pwm_freq_hz=created.pwm_freq_hz,
+                    min_intensity=created.min_intensity,
+                    max_intensity=created.max_intensity,
+                    volts_min=created.volts_min,
+                    volts_max=created.volts_max,
+                    gpio_pin_monitor=created.gpio_pin_monitor,
+                    channel_name=created.channel_name
+                )
+                
+                # Register with hardware
+                if created.device_type == 'WAVEMAKER':
+                    registry.register_wavemaker(created.device_id, config)
                 else:
-                    new_device = DeviceConfigRow(**device_data)
-                    created = store.create_device_config(new_device)
-                    
-                    config = DeviceConfig(
-                        name=created.name,
-                        gpio_pin=created.gpio_pin,
-                        pwm_freq_hz=created.pwm_freq_hz,
-                        min_intensity=created.min_intensity,
-                        max_intensity=created.max_intensity,
-                        volts_min=created.volts_min,
-                        volts_max=created.volts_max,
-                        gpio_pin_monitor=created.gpio_pin_monitor,
-                        channel_name=created.channel_name
-                    )
-                    
-                    if created.device_type == 'WAVEMAKER':
-                        registry.register_wavemaker(created.device_id, config)
-                    else:
-                        registry.register_led(created.device_id, config)
-                    
-                    logging.info(f"[Import] Registered new device {created.device_id} with GPIO {created.gpio_pin}")
-                    
-                    results["devices_imported"] += 1
+                    registry.register_led(created.device_id, config)
+                
+                logging.info(f"[Import] Registered device {created.device_id} ({created.device_type}) on GPIO {created.gpio_pin}")
+                results["devices_imported"] += 1
                     
             except Exception as e:
                 results["errors"].append(f"Device {device_data.get('device_id', 'unknown')}: {str(e)}")
