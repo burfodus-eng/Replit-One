@@ -336,13 +336,33 @@ async def import_config(config_data: ConfigImportData, request: Request):
         for device_data in config_data.devices:
             try:
                 device_id = device_data.get('device_id')
+                if not device_id:
+                    results["errors"].append("Device missing required 'device_id' field")
+                    continue
+                    
                 existing = store.get_device_config(device_id)
                 
                 if existing:
                     for key, value in device_data.items():
                         if key != 'device_id' and hasattr(existing, key):
                             setattr(existing, key, value)
-                    store.update_device_config(device_id, **device_data)
+                    updated = store.update_device_config(device_id, **device_data)
+                    
+                    # Hot-reload device config (same logic as PUT endpoint)
+                    config = DeviceConfig(
+                        name=updated.name,
+                        gpio_pin=updated.gpio_pin,
+                        pwm_freq_hz=updated.pwm_freq_hz,
+                        min_intensity=updated.min_intensity,
+                        max_intensity=updated.max_intensity,
+                        volts_min=updated.volts_min,
+                        volts_max=updated.volts_max,
+                        gpio_pin_monitor=updated.gpio_pin_monitor,
+                        channel_name=updated.channel_name
+                    )
+                    registry.reload_device(device_id, config, updated.device_type)
+                    logging.info(f"[Import] Hot-reloaded existing device {device_id} with GPIO {updated.gpio_pin}")
+                    
                     results["devices_skipped"] += 1
                 else:
                     new_device = DeviceConfigRow(**device_data)
@@ -355,13 +375,17 @@ async def import_config(config_data: ConfigImportData, request: Request):
                         min_intensity=created.min_intensity,
                         max_intensity=created.max_intensity,
                         volts_min=created.volts_min,
-                        volts_max=created.volts_max
+                        volts_max=created.volts_max,
+                        gpio_pin_monitor=created.gpio_pin_monitor,
+                        channel_name=created.channel_name
                     )
                     
                     if created.device_type == 'WAVEMAKER':
                         registry.register_wavemaker(created.device_id, config)
                     else:
                         registry.register_led(created.device_id, config)
+                    
+                    logging.info(f"[Import] Registered new device {created.device_id} with GPIO {created.gpio_pin}")
                     
                     results["devices_imported"] += 1
                     
@@ -375,12 +399,17 @@ async def import_config(config_data: ConfigImportData, request: Request):
                     results["presets_skipped"] += 1
                     continue
                 
+                preset_name = preset_data.get('name')
+                if not preset_name:
+                    results["errors"].append("Preset missing required 'name' field")
+                    continue
+                    
                 preset = WavemakerPreset(
-                    name=preset_data.get('name'),
-                    description=preset_data.get('description', ''),
-                    cycle_duration_sec=preset_data.get('cycle_duration_sec', 60),
+                    name=preset_name,
+                    description=preset_data.get('description') or '',
+                    cycle_duration_sec=preset_data.get('cycle_duration_sec') or 60,
                     is_built_in=False,
-                    flow_curves=preset_data.get('flow_curves', {})
+                    flow_curves=preset_data.get('flow_curves') or {}
                 )
                 store.create_preset(preset)
                 results["presets_imported"] += 1
@@ -391,10 +420,18 @@ async def import_config(config_data: ConfigImportData, request: Request):
     if config_data.scheduled_tasks:
         for task_data in config_data.scheduled_tasks:
             try:
+                task_name = task_data.get('name')
+                task_type = task_data.get('task_type')
+                task_time = task_data.get('time')
+                
+                if not task_name or not task_type or not task_time:
+                    results["errors"].append(f"Task missing required fields (name, task_type, time)")
+                    continue
+                
                 task = ScheduledTaskRow(
-                    name=task_data.get('name'),
-                    task_type=task_data.get('task_type'),
-                    time=task_data.get('time'),
+                    name=task_name,
+                    task_type=task_type,
+                    time=task_time,
                     enabled=task_data.get('enabled', True),
                     preset_id=task_data.get('preset_id'),
                     days_of_week=task_data.get('days_of_week')
