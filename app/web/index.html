@@ -4065,10 +4065,12 @@
     function setBackgroundImage(url) {
       const bgImage = document.getElementById('backgroundImage');
       if (bgImage) {
-        // Reset styles before loading new image
+        // Reset all styles before loading new image
+        bgImage.style.position = 'absolute';
         bgImage.style.minHeight = '';
         bgImage.style.minWidth = '100%';
         bgImage.style.width = '';
+        bgImage.style.objectFit = '';
         bgImage.classList.remove('fixed-bottom');
         bgImage.src = url;
       }
@@ -4456,31 +4458,47 @@
       if (!bgImage) return;
       
       let ticking = false;
+      let isLandscape = false;
       
-      function updateImageSize() {
+      function updateImageMode() {
         if (!bgImage.naturalWidth || !bgImage.naturalHeight) return;
         
         const viewportWidth = window.innerWidth;
-        const contentHeight = document.body.scrollHeight;
+        const viewportHeight = window.innerHeight;
         const aspectRatio = bgImage.naturalWidth / bgImage.naturalHeight;
         
         // Calculate what height the image would be at 100% viewport width
         const imageHeightAtFullWidth = viewportWidth / aspectRatio;
         
-        // If image is too short for content, scale it up to match content height
-        if (imageHeightAtFullWidth < contentHeight) {
-          bgImage.style.minHeight = contentHeight + 'px';
-          bgImage.style.minWidth = '';
+        // Landscape image: shorter than viewport when scaled to full width
+        // Use fixed cover mode - image stays put, content scrolls over it
+        if (imageHeightAtFullWidth <= viewportHeight) {
+          isLandscape = true;
+          bgImage.style.position = 'fixed';
+          bgImage.style.top = '0';
+          bgImage.style.bottom = '';
+          bgImage.style.minHeight = '100vh';
+          bgImage.style.minWidth = '100%';
           bgImage.style.width = 'auto';
+          bgImage.style.objectFit = 'cover';
+          bgImage.classList.remove('fixed-bottom');
         } else {
-          // Image is tall enough, just fill width
+          // Tall image: scrolls with page, locks at bottom
+          isLandscape = false;
+          bgImage.style.position = 'absolute';
+          bgImage.style.top = '0';
+          bgImage.style.bottom = '';
           bgImage.style.minHeight = '';
           bgImage.style.minWidth = '100%';
           bgImage.style.width = '';
+          bgImage.style.objectFit = '';
+          handleScroll();
         }
       }
       
       function handleScroll() {
+        if (isLandscape) return; // Landscape images don't scroll
+        
         const scrollY = window.scrollY;
         const viewportHeight = window.innerHeight;
         const imageHeight = bgImage.offsetHeight;
@@ -4499,33 +4517,23 @@
       }
       
       bgImage.onload = function() {
-        updateImageSize();
-        handleScroll();
+        updateImageMode();
       };
       
       if (bgImage.complete && bgImage.naturalWidth) {
-        updateImageSize();
-        handleScroll();
+        updateImageMode();
       }
       
       window.addEventListener('scroll', function() {
-        if (!ticking) {
+        if (!ticking && !isLandscape) {
           requestAnimationFrame(handleScroll);
           ticking = true;
         }
       }, { passive: true });
       
       window.addEventListener('resize', function() {
-        updateImageSize();
-        handleScroll();
+        updateImageMode();
       });
-      
-      // Re-calculate on content changes
-      const resizeObserver = new ResizeObserver(() => {
-        updateImageSize();
-        handleScroll();
-      });
-      resizeObserver.observe(document.body);
     }
 
     function init() {
