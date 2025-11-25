@@ -21,7 +21,7 @@ The Reef Controller is built upon a FastAPI backend and a vanilla JavaScript fro
 - **Toast Notifications**: Non-blocking success/error/info toasts replace `alert()` calls.
 - **Clean Interactions**: Removed button hover bounce effects. Feed Mode button toggles states.
 - **Logs Viewer**: Full-page log viewer with auto-refresh, log level filtering (INFO/WARNING/ERROR), and real-time workflow output display.
-- **Hardware Settings Page**: Configuration interface for GPIO device management with forms for primary devices (wavemakers/LEDs) and secondary mirror devices, including GPIO pin assignment, PWM frequency, voltage limits, and follow relationships.
+- **Hardware Settings Page**: Compact 8-column grid layout for GPIO device management. Shows device ID with type as subtitle, editable channel names, GPIO pin assignments (with optional monitor pin), PWM frequency, intensity range, and voltage limits. Devices are sorted by type (wavemakers first) then channel number. Compact action buttons (Test/Save/Del) without emoji. Tabs for Wavemakers, LEDs, and All Devices views.
 
 ### Technical Implementations
 - **Backend (FastAPI)**:
