@@ -202,16 +202,16 @@
     }
     
     .version-badge {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-primary);
-      background: rgba(255, 255, 255, 0.12);
-      padding: 6px 12px;
-      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary-cyan);
+      background: rgba(56, 189, 248, 0.15);
+      padding: 4px 10px;
+      border-radius: 6px;
       backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      letter-spacing: 0.3px;
-      box-shadow: 0 4px 8px rgba(124, 58, 237, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
     }
 
     .live-clock {
@@ -1905,6 +1905,39 @@
       
       <div style="margin-top: 24px; padding: 16px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
         <p style="font-size: 14px; color: #a0aec0;"><strong>💡 Tip:</strong> Changes are applied immediately. Use the Test button to verify your devices are working correctly. Export your config before updating software.</p>
+      </div>
+    </div>
+    
+    <div class="card" style="margin-top: 12px;">
+      <div class="card-header">
+        <div class="array-title">Theme Settings</div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 16px 0;">
+        <div class="preset-form-group">
+          <label class="preset-form-label" style="color: var(--text-primary);">Theme</label>
+          <select id="themeSelector" class="mode-selector" onchange="changeTheme(this.value)">
+            <option value="neon-reef">Neon Reef (Current)</option>
+            <option value="ocean-light">Ocean Light (Coming Soon)</option>
+          </select>
+        </div>
+        
+        <div class="preset-form-group">
+          <label class="preset-form-label" style="color: var(--text-primary);">Background Image</label>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="file" id="bgImageUpload" accept="image/*" style="display: none;" onchange="uploadBackground(this)">
+            <button class="btn-primary" onclick="document.getElementById('bgImageUpload').click()">Upload Image</button>
+            <button class="btn-primary" onclick="resetBackground()" style="background: var(--warning);">Reset Default</button>
+          </div>
+          <p style="color: var(--text-muted); font-size: 12px; margin-top: 8px;">Upload a custom background image. Recommended: high resolution, landscape orientation.</p>
+        </div>
+      </div>
+      
+      <div id="bgPreview" style="display: none; margin-top: 16px;">
+        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 8px;">Current Background:</p>
+        <div style="width: 200px; height: 120px; border-radius: 8px; overflow: hidden; border: 2px solid rgba(255,255,255,0.2);">
+          <img id="bgPreviewImg" style="width: 100%; height: 100%; object-fit: cover;" src="">
+        </div>
       </div>
     </div>
   </div>
@@ -3779,7 +3812,7 @@
       const chartWidth = width - 2 * padding;
       const chartHeight = height - 2 * padding;
       
-      ctx.strokeStyle = '#e2e8f0';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
       ctx.lineWidth = 1;
       for (let i = 0; i <= 4; i++) {
         const y = padding + (chartHeight / 4) * i;
@@ -3789,7 +3822,7 @@
         ctx.stroke();
       }
       
-      ctx.fillStyle = '#4a5568';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
       ctx.font = '12px Arial';
       ctx.textAlign = 'right';
       for (let i = 0; i <= 4; i++) {
@@ -3855,11 +3888,11 @@
         const y = padding + idx * 25;
         ctx.fillStyle = colors[arrayId];
         ctx.fillRect(x, y - 8, 15, 15);
-        ctx.fillStyle = '#4a5568';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
         ctx.fillText(arrayId, x + 20, y + 4);
       });
       
-      ctx.fillStyle = '#4a5568';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
       ctx.font = '12px Arial';
       ctx.textAlign = 'center';
       if (data.length > 1) {
@@ -3895,7 +3928,7 @@
       const chartWidth = width - 2 * padding;
       const chartHeight = height - 2 * padding;
       
-      ctx.strokeStyle = '#e2e8f0';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
       ctx.lineWidth = 1;
       for (let i = 0; i <= 4; i++) {
         const y = padding + (chartHeight / 4) * i;
@@ -3905,7 +3938,7 @@
         ctx.stroke();
       }
       
-      ctx.fillStyle = '#4a5568';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
       ctx.font = '12px Arial';
       ctx.textAlign = 'right';
       for (let i = 0; i <= 4; i++) {
@@ -3914,7 +3947,7 @@
         ctx.fillText(value.toFixed(0) + 'W', padding - 5, y + 4);
       }
       
-      ctx.strokeStyle = '#667eea';
+      ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 2;
       ctx.beginPath();
       if (data.length > 1) {
@@ -3934,7 +3967,7 @@
         ctx.fillRect(x - 2, y - 2, 4, 4);
       }
       
-      ctx.fillStyle = '#4a5568';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
       ctx.font = '12px Arial';
       ctx.textAlign = 'center';
       if (data.length > 1) {
@@ -3970,6 +4003,71 @@
         console.error('[Logs] Failed to load:', error);
         document.getElementById('logsContent').textContent = 'Error loading logs';
       }
+    }
+
+    const DEFAULT_BACKGROUND = '/ui/assets/background.jpg';
+    
+    function loadThemeSettings() {
+      const savedBg = localStorage.getItem('customBackground');
+      if (savedBg) {
+        document.body.style.backgroundImage = `url('${savedBg}')`;
+        updateBgPreview(savedBg);
+      }
+      const savedTheme = localStorage.getItem('selectedTheme') || 'neon-reef';
+      document.getElementById('themeSelector').value = savedTheme;
+    }
+
+    function updateBgPreview(src) {
+      const preview = document.getElementById('bgPreview');
+      const previewImg = document.getElementById('bgPreviewImg');
+      if (src) {
+        previewImg.src = src;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+    }
+
+    async function uploadBackground(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', 'error');
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        showToast('Image must be less than 10MB', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        document.body.style.backgroundImage = `url('${dataUrl}')`;
+        localStorage.setItem('customBackground', dataUrl);
+        updateBgPreview(dataUrl);
+        showToast('Background updated successfully', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resetBackground() {
+      localStorage.removeItem('customBackground');
+      document.body.style.backgroundImage = `url('${DEFAULT_BACKGROUND}')`;
+      document.getElementById('bgPreview').style.display = 'none';
+      showToast('Background reset to default', 'success');
+    }
+
+    function changeTheme(themeId) {
+      localStorage.setItem('selectedTheme', themeId);
+      if (themeId === 'ocean-light') {
+        showToast('Ocean Light theme coming soon!', 'info');
+        document.getElementById('themeSelector').value = 'neon-reef';
+        return;
+      }
+      showToast('Theme applied', 'success');
     }
 
     let currentSettingsTab = 'wavemakers';
@@ -4305,6 +4403,7 @@
       setInterval(updateClock, 1000);
       
       updateVersion();
+      loadThemeSettings();
       
       navigateTo('dashboard');
       
