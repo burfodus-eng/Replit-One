@@ -54,3 +54,11 @@ externalPort = 3001
 deploymentTarget = "autoscale"
 run = ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000"]
 build = ["pip", "install", "-r", "requirements.txt"]
+
+[userenv]
+
+[userenv.shared]
+USER_TZ_OFFSET = "600"
+HARDWARE_MODE = "esp32"
+ESP32_SERIAL_PORT = "COM4"
+ESP32_SERIAL_BAUD = "115200"
