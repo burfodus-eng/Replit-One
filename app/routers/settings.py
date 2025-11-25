@@ -20,6 +20,8 @@ class DeviceConfigCreate(BaseModel):
     volts_min: float = Field(ge=0.0, le=10.0, default=0.0)
     volts_max: float = Field(ge=0.0, le=10.0, default=5.0)
     follow_device_id: Optional[str] = None
+    gpio_pin_monitor: Optional[int] = Field(None, ge=0, le=40)
+    channel_name: Optional[str] = None
 
 
 class DeviceConfigUpdate(BaseModel):
@@ -31,6 +33,8 @@ class DeviceConfigUpdate(BaseModel):
     volts_min: Optional[float] = Field(None, ge=0.0, le=10.0)
     volts_max: Optional[float] = Field(None, ge=0.0, le=10.0)
     follow_device_id: Optional[str] = None
+    gpio_pin_monitor: Optional[int] = Field(None, ge=0, le=40)
+    channel_name: Optional[str] = None
 
 
 @router.get('/api/settings/hardware')
@@ -79,7 +83,9 @@ async def create_device(device: DeviceConfigCreate, request: Request):
         min_intensity=created.min_intensity,
         max_intensity=created.max_intensity,
         volts_min=created.volts_min,
-        volts_max=created.volts_max
+        volts_max=created.volts_max,
+        gpio_pin_monitor=created.gpio_pin_monitor,
+        channel_name=created.channel_name
     )
     
     if created.device_type == 'WAVEMAKER':
@@ -115,24 +121,33 @@ async def update_device(device_id: str, updates: DeviceConfigUpdate, request: Re
     
     updated = store.update_device_config(device_id, **update_data)
     
-    # Hot-reload the device if GPIO pin or PWM frequency changed
-    if 'gpio_pin' in update_data or 'pwm_freq_hz' in update_data:
-        from app.services.hw_devices import registry, DeviceConfig
-        
-        # Build new config from updated device
-        config = DeviceConfig(
-            name=updated.name,
-            gpio_pin=updated.gpio_pin,
-            pwm_freq_hz=updated.pwm_freq_hz,
-            min_intensity=updated.min_intensity,
-            max_intensity=updated.max_intensity,
-            volts_min=updated.volts_min,
-            volts_max=updated.volts_max
-        )
-        
-        # Reload device in registry
+    # Hot-reload device config for ANY parameter changes (not just GPIO/freq)
+    from app.services.hw_devices import registry, DeviceConfig
+    
+    # Check if GPIO pin changed (requires full hardware re-init)
+    gpio_changed = 'gpio_pin' in update_data
+    
+    # Build new config from updated device
+    config = DeviceConfig(
+        name=updated.name,
+        gpio_pin=updated.gpio_pin,
+        pwm_freq_hz=updated.pwm_freq_hz,
+        min_intensity=updated.min_intensity,
+        max_intensity=updated.max_intensity,
+        volts_min=updated.volts_min,
+        volts_max=updated.volts_max,
+        gpio_pin_monitor=updated.gpio_pin_monitor,
+        channel_name=updated.channel_name
+    )
+    
+    if gpio_changed:
+        # Full reload when GPIO pin changes (need to clean up old pin)
         registry.reload_device(device_id, config, updated.device_type)
-        logging.info(f"[Settings] Hot-reloaded {device_id} with new GPIO/PWM configuration")
+        logging.info(f"[Settings] Hot-reloaded {device_id} with new GPIO pin {updated.gpio_pin}")
+    else:
+        # Just update the config in-place for other parameters
+        registry.update_device_config(device_id, config, updated.device_type)
+        logging.info(f"[Settings] Updated {device_id} config (intensity: {updated.min_intensity:.2f}-{updated.max_intensity:.2f})")
     
     return updated.model_dump()
 
@@ -255,3 +270,145 @@ async def get_logs(level: str = 'all'):
         return {"logs": logs[-50000:]}
     except Exception as e:
         return {"logs": f"Error reading logs: {str(e)}"}
+
+
+class ConfigImportData(BaseModel):
+    devices: Optional[List[dict]] = None
+    presets: Optional[List[dict]] = None
+    scheduled_tasks: Optional[List[dict]] = None
+    version: str = "1.0"
+
+
+@router.get('/api/settings/export')
+async def export_config(request: Request):
+    """Export full system configuration as JSON for backup"""
+    from datetime import datetime
+    
+    store = request.app.state.store
+    
+    devices = store.get_all_device_configs()
+    presets = store.get_all_presets()
+    scheduled_tasks = store.get_all_scheduled_tasks()
+    
+    export_data = {
+        "version": "1.0",
+        "exported_at": datetime.now().isoformat(),
+        "devices": [d.model_dump() for d in devices],
+        "presets": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "description": p.description,
+                "cycle_duration_sec": p.cycle_duration_sec,
+                "is_built_in": p.is_built_in,
+                "flow_curves": p.flow_curves
+            }
+            for p in presets
+        ],
+        "scheduled_tasks": [t.model_dump() for t in scheduled_tasks]
+    }
+    
+    logging.info(f"[Export] Exported config: {len(devices)} devices, {len(presets)} presets, {len(scheduled_tasks)} tasks")
+    
+    return export_data
+
+
+@router.post('/api/settings/import')
+async def import_config(config_data: ConfigImportData, request: Request):
+    """Import system configuration from JSON backup"""
+    from app.services.storage import DeviceConfigRow, WavemakerPreset, ScheduledTaskRow
+    from app.services.hw_devices import registry, DeviceConfig
+    from app.hw_scheduler.realtime_loop import set_led_follow
+    
+    store = request.app.state.store
+    
+    results = {
+        "devices_imported": 0,
+        "devices_skipped": 0,
+        "presets_imported": 0,
+        "presets_skipped": 0,
+        "tasks_imported": 0,
+        "tasks_skipped": 0,
+        "errors": []
+    }
+    
+    if config_data.devices:
+        for device_data in config_data.devices:
+            try:
+                device_id = device_data.get('device_id')
+                existing = store.get_device_config(device_id)
+                
+                if existing:
+                    for key, value in device_data.items():
+                        if key != 'device_id' and hasattr(existing, key):
+                            setattr(existing, key, value)
+                    store.update_device_config(device_id, **device_data)
+                    results["devices_skipped"] += 1
+                else:
+                    new_device = DeviceConfigRow(**device_data)
+                    created = store.create_device_config(new_device)
+                    
+                    config = DeviceConfig(
+                        name=created.name,
+                        gpio_pin=created.gpio_pin,
+                        pwm_freq_hz=created.pwm_freq_hz,
+                        min_intensity=created.min_intensity,
+                        max_intensity=created.max_intensity,
+                        volts_min=created.volts_min,
+                        volts_max=created.volts_max
+                    )
+                    
+                    if created.device_type == 'WAVEMAKER':
+                        registry.register_wavemaker(created.device_id, config)
+                    else:
+                        registry.register_led(created.device_id, config)
+                    
+                    results["devices_imported"] += 1
+                    
+            except Exception as e:
+                results["errors"].append(f"Device {device_data.get('device_id', 'unknown')}: {str(e)}")
+    
+    if config_data.presets:
+        for preset_data in config_data.presets:
+            try:
+                if preset_data.get('is_built_in'):
+                    results["presets_skipped"] += 1
+                    continue
+                
+                preset = WavemakerPreset(
+                    name=preset_data.get('name'),
+                    description=preset_data.get('description', ''),
+                    cycle_duration_sec=preset_data.get('cycle_duration_sec', 60),
+                    is_built_in=False,
+                    flow_curves=preset_data.get('flow_curves', {})
+                )
+                store.create_preset(preset)
+                results["presets_imported"] += 1
+                
+            except Exception as e:
+                results["errors"].append(f"Preset {preset_data.get('name', 'unknown')}: {str(e)}")
+    
+    if config_data.scheduled_tasks:
+        for task_data in config_data.scheduled_tasks:
+            try:
+                task = ScheduledTaskRow(
+                    name=task_data.get('name'),
+                    task_type=task_data.get('task_type'),
+                    time=task_data.get('time'),
+                    enabled=task_data.get('enabled', True),
+                    preset_id=task_data.get('preset_id'),
+                    days_of_week=task_data.get('days_of_week')
+                )
+                store.create_scheduled_task(task)
+                results["tasks_imported"] += 1
+                
+            except Exception as e:
+                results["errors"].append(f"Task {task_data.get('name', 'unknown')}: {str(e)}")
+    
+    for device in store.get_all_device_configs():
+        if device.device_type == "LED" and device.follow_device_id:
+            set_led_follow(device.device_id, device.follow_device_id)
+    
+    logging.info(f"[Import] Imported: {results['devices_imported']} devices, {results['presets_imported']} presets, {results['tasks_imported']} tasks")
+    
+    return results

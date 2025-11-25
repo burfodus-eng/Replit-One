@@ -976,6 +976,38 @@
       -webkit-overflow-scrolling: touch;
     }
 
+    .settings-tab {
+      padding: 12px 24px;
+      border: none;
+      background: transparent;
+      color: #a0aec0;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .settings-tab:hover {
+      color: #e2e8f0;
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .settings-tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .hw-col-channel-name {
+      display: flex;
+      align-items: center;
+    }
+
+    .hw-col-monitor-pin {
+      display: flex;
+      align-items: center;
+    }
+
     @media (max-width: 1200px) {
       .hardware-table {
         min-width: 1120px;
@@ -1374,7 +1406,17 @@
     <div class="card" style="margin-bottom: 12px;">
       <div class="card-header">
         <div class="array-title">Hardware Configuration</div>
-        <button class="btn-primary" onclick="addNewDevice()">Add Device</button>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-primary" onclick="exportConfig()">Export Config</button>
+          <button class="btn-primary" onclick="importConfig()">Import Config</button>
+          <button class="btn-primary" onclick="addNewDevice()">Add Device</button>
+        </div>
+      </div>
+      
+      <div class="settings-tabs" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid #2d3748;">
+        <button class="settings-tab active" data-tab="wavemakers" onclick="switchSettingsTab('wavemakers', this)">Wavemakers</button>
+        <button class="settings-tab" data-tab="leds" onclick="switchSettingsTab('leds', this)">LEDs</button>
+        <button class="settings-tab" data-tab="all" onclick="switchSettingsTab('all', this)">All Devices</button>
       </div>
       
       <div class="hardware-table-wrapper">
@@ -1382,7 +1424,7 @@
       </div>
       
       <div style="margin-top: 24px; padding: 16px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
-        <p style="font-size: 14px; color: #a0aec0;"><strong>💡 Tip:</strong> Changes are applied immediately. Use the Test button to verify your LEDs are working correctly.</p>
+        <p style="font-size: 14px; color: #a0aec0;"><strong>💡 Tip:</strong> Changes are applied immediately. Use the Test button to verify your devices are working correctly. Export your config before updating software.</p>
       </div>
     </div>
   </div>
@@ -3450,21 +3492,96 @@
       }
     }
 
+    let currentSettingsTab = 'wavemakers';
+    let allHardwareDevices = [];
+
     async function loadHardwareSettings() {
       try {
         const response = await fetch('/api/settings/hardware');
-        const devices = await response.json();
-        renderHardwareDevices(devices);
+        allHardwareDevices = await response.json();
+        renderHardwareDevices(filterDevicesByTab(allHardwareDevices, currentSettingsTab));
       } catch (error) {
         console.error('[Settings] Failed to load hardware:', error);
         showToast('Failed to load hardware settings', 'error');
       }
     }
 
+    function filterDevicesByTab(devices, tab) {
+      if (tab === 'all') return devices;
+      if (tab === 'wavemakers') return devices.filter(d => d.device_type === 'WAVEMAKER');
+      if (tab === 'leds') return devices.filter(d => d.device_type === 'LED');
+      return devices;
+    }
+
+    function switchSettingsTab(tab, buttonEl) {
+      currentSettingsTab = tab;
+      document.querySelectorAll('.settings-tab').forEach(btn => btn.classList.remove('active'));
+      buttonEl.classList.add('active');
+      renderHardwareDevices(filterDevicesByTab(allHardwareDevices, tab));
+    }
+
+    async function exportConfig() {
+      try {
+        const response = await fetch('/api/settings/export');
+        const config = await response.json();
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reef-controller-config-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Configuration exported successfully', 'success');
+      } catch (error) {
+        console.error('[Settings] Export failed:', error);
+        showToast('Failed to export configuration', 'error');
+      }
+    }
+
+    async function importConfig() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+          const text = await file.text();
+          const config = JSON.parse(text);
+          
+          if (!confirm(`Import configuration?\n\nThis will add:\n- ${config.devices?.length || 0} devices\n- ${config.presets?.length || 0} presets\n- ${config.scheduled_tasks?.length || 0} scheduled tasks\n\nExisting items will be updated.`)) {
+            return;
+          }
+          
+          const response = await fetch('/api/settings/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+          });
+          
+          const result = await response.json();
+          showToast(`Import complete: ${result.devices_imported} devices, ${result.presets_imported} presets, ${result.tasks_imported} tasks added`, 'success');
+          
+          if (result.errors && result.errors.length > 0) {
+            console.warn('[Settings] Import errors:', result.errors);
+          }
+          
+          await loadHardwareSettings();
+        } catch (error) {
+          console.error('[Settings] Import failed:', error);
+          showToast('Failed to import configuration: ' + error.message, 'error');
+        }
+      };
+      input.click();
+    }
+
     function renderHardwareDevices(devices) {
       const container = document.getElementById('hardwareDevicesList');
       if (!devices || devices.length === 0) {
-        container.innerHTML = '<p style="color: #718096; text-align: center; padding: 32px;">No devices configured. Click "Add Device" to get started.</p>';
+        container.innerHTML = '<p style="color: #718096; text-align: center; padding: 32px;">No devices in this category. Click "Add Device" to get started or switch tabs.</p>';
         return;
       }
 
@@ -3472,7 +3589,9 @@
         <div class="hardware-table">
           <div class="hardware-table-header">
             <div class="hw-col-device">Device</div>
+            <div class="hw-col-channel-name">Channel Name</div>
             <div class="hw-col-pin">GPIO Pin</div>
+            <div class="hw-col-monitor-pin">Monitor Pin</div>
             <div class="hw-col-freq">PWM Freq (Hz)</div>
             <div class="hw-col-intensity">Intensity Range</div>
             <div class="hw-col-voltage">Voltage Range</div>
@@ -3484,10 +3603,20 @@
                 <div class="hw-device-name">${device.name} <span style="color: #667eea; font-weight: 600;">[${device.device_id}]</span></div>
                 <div class="hw-device-type">${device.device_type}</div>
               </div>
+              <div class="hw-col-channel-name">
+                <input type="text" class="hw-input" value="${device.channel_name || ''}" 
+                       onchange="updateDeviceField('${device.device_id}', 'channel_name', this.value)"
+                       placeholder="${device.device_type === 'WAVEMAKER' ? 'e.g., Front Left' : 'Optional'}">
+              </div>
               <div class="hw-col-pin">
                 <input type="number" class="hw-input" value="${device.gpio_pin}" 
                        onchange="updateDeviceField('${device.device_id}', 'gpio_pin', this.value)" 
                        min="0" max="40">
+              </div>
+              <div class="hw-col-monitor-pin">
+                <input type="number" class="hw-input" value="${device.gpio_pin_monitor || ''}" 
+                       onchange="updateDeviceField('${device.device_id}', 'gpio_pin_monitor', this.value)"
+                       min="0" max="40" placeholder="None">
               </div>
               <div class="hw-col-freq">
                 <input type="number" class="hw-input" value="${device.pwm_freq_hz}" 
@@ -3539,7 +3668,15 @@
       if (!deviceUpdates[deviceId]) {
         deviceUpdates[deviceId] = {};
       }
-      deviceUpdates[deviceId][field] = field.includes('intensity') || field.includes('volts') ? parseFloat(value) : parseInt(value);
+      if (field === 'channel_name') {
+        deviceUpdates[deviceId][field] = value || null;
+      } else if (field === 'gpio_pin_monitor') {
+        deviceUpdates[deviceId][field] = value ? parseInt(value) : null;
+      } else if (field.includes('intensity') || field.includes('volts')) {
+        deviceUpdates[deviceId][field] = parseFloat(value);
+      } else {
+        deviceUpdates[deviceId][field] = parseInt(value);
+      }
     }
 
     async function testDevice(deviceId, gpioPin) {
@@ -3567,17 +3704,21 @@
       }
       
       try {
-        await fetch(`/api/settings/hardware/${deviceId}`, {
+        const response = await fetch(`/api/settings/hardware/${deviceId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(deviceUpdates[deviceId])
         });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || 'Save failed');
+        }
         delete deviceUpdates[deviceId];
-        showToast('Device settings saved successfully', 'success');
+        showToast('Device settings saved and applied immediately', 'success');
         await loadHardwareSettings();
       } catch (error) {
         console.error('[Settings] Failed to save:', error);
-        showToast('Failed to save settings', 'error');
+        showToast('Failed to save settings: ' + error.message, 'error');
       }
     }
 

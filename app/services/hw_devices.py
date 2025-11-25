@@ -49,6 +49,8 @@ class DeviceConfig:
     max_intensity: float = 1.0
     volts_min: float = 0.0
     volts_max: float = 5.0
+    gpio_pin_monitor: Optional[int] = None
+    channel_name: Optional[str] = None
 
 
 class PWMDevice:
@@ -129,6 +131,8 @@ class PWMDevice:
             "max_intensity": self.config.max_intensity,
             "volts_min": self.config.volts_min,
             "volts_max": self.config.volts_max,
+            "gpio_pin_monitor": self.config.gpio_pin_monitor,
+            "channel_name": self.config.channel_name,
             "current_duty": self.current_duty,
             "current_voltage": self.get_voltage(),
         }
@@ -233,6 +237,45 @@ class DeviceRegistry:
         
         logging.warning(f"Device {device_id} not found in registry")
         return False
+    
+    def update_device_config(self, device_id: str, config: DeviceConfig, device_type: str) -> bool:
+        """
+        Update device configuration in-place without hardware re-initialization.
+        
+        Use this for intensity/voltage range changes that don't require GPIO changes.
+        
+        Args:
+            device_id: Device identifier
+            config: New device configuration
+            device_type: 'WAVEMAKER' or 'LED'
+            
+        Returns:
+            True if device was found and updated
+        """
+        if device_type == 'WAVEMAKER':
+            device = self.wavemakers.get(device_id)
+        else:
+            device = self.leds.get(device_id)
+        
+        if not device:
+            logging.warning(f"Device {device_id} not found for config update")
+            return False
+        
+        # Update config parameters in-place
+        device.config.name = config.name
+        device.config.min_intensity = config.min_intensity
+        device.config.max_intensity = config.max_intensity
+        device.config.volts_min = config.volts_min
+        device.config.volts_max = config.volts_max
+        device.config.gpio_pin_monitor = config.gpio_pin_monitor
+        device.config.channel_name = config.channel_name
+        
+        # Update PWM frequency if it changed (doesn't require re-init)
+        if device.config.pwm_freq_hz != config.pwm_freq_hz:
+            device.set_frequency(config.pwm_freq_hz)
+        
+        logging.info(f"Updated {device_id} config in-place: range {config.min_intensity:.2f}-{config.max_intensity:.2f}")
+        return True
     
     def reload_device(self, device_id: str, config: DeviceConfig, device_type: str) -> PWMDevice:
         """

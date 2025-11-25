@@ -45,6 +45,8 @@ class DeviceConfigRow(SQLModel, table=True):
     volts_min: float = 0.0
     volts_max: float = 5.0
     follow_device_id: Optional[str] = None
+    gpio_pin_monitor: Optional[int] = None
+    channel_name: Optional[str] = None
 
 
 def make_db(db_url: str):

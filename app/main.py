@@ -160,7 +160,9 @@ async def startup():
                 min_intensity=device.min_intensity,
                 max_intensity=device.max_intensity,
                 volts_min=device.volts_min,
-                volts_max=device.volts_max
+                volts_max=device.volts_max,
+                gpio_pin_monitor=device.gpio_pin_monitor,
+                channel_name=device.channel_name
             )
             
             if device.device_type == "WAVEMAKER":
