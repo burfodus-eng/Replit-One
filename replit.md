@@ -4,6 +4,7 @@
 Reef Controller is a sophisticated web-based application built with FastAPI, designed for real-time monitoring and control of reef aquarium equipment.
 
 ## Recent Changes
+- **v1.9.0** (2025-11-25): Applied comprehensive visual upgrade - deep ocean gradient background, enhanced glassmorphism effects on all cards, modern system font stack, sleeker controls with refined hover states, smooth animations with proper easing, better depth layering with improved shadows, modern status badge designs, and enhanced data visualizations. Interface now has a polished, professional appearance.
 - **v1.8.2** (2025-11-25): Added GPIO conflict detection for config import - rejects imports with duplicate GPIO assignments before any changes are made, preventing hardware conflicts. Also added registry-level guards to prevent registering devices on already-claimed GPIO pins.
 - **v1.8.1** (2025-11-25): Fixed config import hot-reload bug - imported device configurations now immediately apply to hardware registry without requiring restart. This resolves LED jitter issues when importing configs with different GPIO mappings.
 
