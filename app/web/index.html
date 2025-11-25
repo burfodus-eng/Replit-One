@@ -98,9 +98,14 @@
     
     /* Theme: Dark - mauve-tinted grey overlay on cards */
     body.theme-dark {
-      --card-bg: rgba(95, 85, 105, 0.70);
-      --header-bg: rgba(95, 85, 105, 0.70);
-      --inner-bg: rgba(95, 85, 105, 0.55);
+      --card-bg: rgba(95, 80, 115, 0.70);
+      --header-bg: rgba(95, 80, 115, 0.70);
+      --inner-bg: rgba(95, 80, 115, 0.55);
+      --border-color: rgba(60, 50, 75, 0.5);
+    }
+    
+    body.theme-light {
+      --border-color: rgba(255, 255, 255, 0.2);
     }
 
     .container {
@@ -121,7 +126,7 @@
       border-radius: 20px;
       box-shadow: 0 8px 32px rgba(92, 184, 226, 0.1), 0 0 40px rgba(138, 95, 214, 0.07);
       margin-bottom: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
       position: relative;
       overflow: hidden;
     }
@@ -189,7 +194,7 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
     }
 
     .nav-item {
@@ -297,7 +302,7 @@
       box-shadow: 0 8px 32px rgba(92, 184, 226, 0.1), 0 0 40px rgba(138, 95, 214, 0.07);
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
       position: relative;
       overflow: hidden;
     }
@@ -551,7 +556,7 @@
       border-radius: 24px;
       padding: 24px;
       box-shadow: 0 8px 32px rgba(92, 184, 226, 0.1), 0 0 40px rgba(138, 95, 214, 0.07);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
       position: relative;
       overflow: hidden;
     }
@@ -1666,7 +1671,7 @@
       border-radius: 24px;
       padding: 18px;
       box-shadow: 0 8px 32px rgba(92, 184, 226, 0.1), 0 0 40px rgba(138, 95, 214, 0.07);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
