@@ -12,9 +12,6 @@
       --primary-magenta: #d76fa1;
       --success: #34d399;
       --warning: #f59e0b;
-      --text-primary: #f8fafc;
-      --text-secondary: rgba(248, 250, 252, 0.7);
-      --text-muted: rgba(248, 250, 252, 0.5);
       --glow-cyan: 0 0 10px rgba(92, 184, 226, 0.4), 0 0 20px rgba(92, 184, 226, 0.2);
       --glow-violet: 0 0 10px rgba(138, 95, 214, 0.4), 0 0 20px rgba(138, 95, 214, 0.2);
       --glow-magenta: 0 0 10px rgba(215, 111, 161, 0.4), 0 0 20px rgba(215, 111, 161, 0.2);
@@ -89,20 +86,28 @@
       bottom: 0;
     }
     
-    /* Theme: Light (default) - light mauve-tinted overlay on cards */
+    /* Theme: Light - light mauve-tinted overlay on cards */
     body.theme-light {
-      --card-bg: rgba(235, 220, 250, 0.70);
-      --header-bg: rgba(235, 220, 250, 0.70);
-      --inner-bg: rgba(235, 220, 250, 0.55);
-      --border-color: rgba(200, 185, 215, 0.5);
+      --card-bg: rgba(245, 240, 252, 0.70);
+      --header-bg: rgba(245, 240, 252, 0.70);
+      --inner-bg: rgba(245, 240, 252, 0.55);
+      --border-color: rgba(255, 255, 255, 0.6);
+      --text-primary: #1a1a2e;
+      --text-secondary: #4a4a6a;
+      --dropdown-bg: rgba(245, 240, 252, 0.95);
+      --dropdown-hover: rgba(235, 228, 248, 0.95);
     }
     
-    /* Theme: Dark - dark mauve-tinted overlay on cards */
+    /* Theme: Dark (default) - dark mauve-tinted overlay on cards */
     body.theme-dark {
       --card-bg: rgba(95, 80, 115, 0.70);
       --header-bg: rgba(95, 80, 115, 0.70);
       --inner-bg: rgba(95, 80, 115, 0.55);
       --border-color: rgba(60, 50, 75, 0.5);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --dropdown-bg: rgba(20, 25, 50, 0.95);
+      --dropdown-hover: rgba(30, 35, 60, 0.95);
     }
 
     .container {
@@ -750,7 +755,7 @@
     }
 
     .modal-content {
-      background: rgba(20, 25, 50, 0.95);
+      background: var(--dropdown-bg, rgba(20, 25, 50, 0.95));
       border-radius: 24px;
       padding: 32px;
       max-width: 800px;
@@ -796,7 +801,7 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      background: rgba(20, 25, 50, 0.98);
+      background: var(--dropdown-bg, rgba(20, 25, 50, 0.98));
       padding: 16px;
       margin: -24px -24px 24px -24px;
       border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
@@ -907,13 +912,13 @@
 
     .input-field {
       padding: 14px 18px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
       border-radius: 12px;
       font-size: 16px;
       min-height: 48px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       font-family: inherit;
-      background: var(--inner-bg, rgba(255, 255, 255, 0.02));
+      background: var(--dropdown-bg, rgba(255, 255, 255, 0.02));
       color: var(--text-primary);
     }
 
@@ -921,12 +926,12 @@
       outline: none;
       border-color: var(--primary-cyan);
       box-shadow: 0 0 0 3px rgba(92, 184, 226, 0.15);
-      background: rgba(255, 255, 255, 0.12);
+      background: var(--dropdown-hover, rgba(255, 255, 255, 0.12));
     }
 
     .input-field:hover {
-      border-color: rgba(255, 255, 255, 0.35);
-      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--primary-cyan);
+      background: var(--dropdown-hover, rgba(255, 255, 255, 0.1));
     }
     
     .input-field::placeholder {
@@ -974,7 +979,7 @@
     
     .preset-editor-sidebar {
       width: 280px;
-      background: rgba(15, 20, 40, 0.9);
+      background: var(--card-bg, rgba(15, 20, 40, 0.9));
       padding: 24px;
       overflow-y: auto;
       border-right: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
@@ -985,7 +990,7 @@
       flex: 1;
       padding: 24px;
       overflow-y: auto;
-      background: rgba(20, 25, 50, 0.95);
+      background: var(--dropdown-bg, rgba(20, 25, 50, 0.95));
       color: var(--text-primary);
     }
     
@@ -1250,12 +1255,12 @@
     .hw-input, .hw-input-small, .hw-select {
       width: 100%;
       padding: 7px 10px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
       border-radius: 6px;
       font-size: 11px;
       font-weight: 500;
       color: var(--text-primary);
-      background: var(--inner-bg, rgba(255, 255, 255, 0.02));
+      background: var(--dropdown-bg, rgba(255, 255, 255, 0.02));
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -1263,11 +1268,11 @@
       outline: none;
       border-color: var(--primary-cyan);
       box-shadow: 0 0 0 3px rgba(92, 184, 226, 0.15);
-      background: rgba(255, 255, 255, 0.12);
+      background: var(--dropdown-hover, rgba(255, 255, 255, 0.12));
     }
 
     .hw-input:hover, .hw-input-small:hover, .hw-select:hover {
-      border-color: rgba(255, 255, 255, 0.35);
+      border-color: var(--primary-cyan);
     }
 
     .hw-range-inputs {
@@ -1736,12 +1741,12 @@
     .mode-selector {
       width: 100%;
       padding: 14px 18px;
-      border: 2px solid rgba(255, 255, 255, 0.2);
+      border: 2px solid var(--border-color, rgba(255, 255, 255, 0.2));
       border-radius: 12px;
       font-size: 16px;
       font-weight: 600;
       min-height: 48px;
-      background: rgba(20, 25, 50, 0.95);
+      background: var(--dropdown-bg, rgba(20, 25, 50, 0.95));
       color: var(--text-primary);
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1756,11 +1761,11 @@
 
     .mode-selector:hover {
       border-color: var(--primary-cyan);
-      background: rgba(30, 35, 60, 0.95);
+      background: var(--dropdown-hover, rgba(30, 35, 60, 0.95));
     }
 
     .mode-selector option {
-      background: rgb(20, 25, 50);
+      background: var(--dropdown-bg, rgb(20, 25, 50));
       color: var(--text-primary);
       padding: 12px;
     }
@@ -1854,7 +1859,7 @@
       
       <div class="preset-controls">
         <div class="preset-selector-container">
-          <label style="color: white; margin-right: 10px;">Flow Preset:</label>
+          <label style="color: var(--text-primary); margin-right: 10px;">Flow Preset:</label>
           <select id="presetSelector" class="mode-selector" style="flex: 1; max-width: 300px;" onchange="activatePreset(this.value)">
             <option value="">Manual Control</option>
           </select>
