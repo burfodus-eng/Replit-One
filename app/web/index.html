@@ -63,14 +63,28 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-      background: url('/ui/assets/background.jpg') no-repeat center top fixed;
-      background-size: cover;
+      background: url('/ui/assets/background.jpg') no-repeat center top;
+      background-size: 100% auto;
       background-color: #0b1026;
       color: var(--text-primary);
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       position: relative;
+    }
+    
+    /* Theme: Light (default) - subtle white overlay on cards */
+    body.theme-light {
+      --card-bg: rgba(255, 255, 255, 0.06);
+      --card-blur: blur(0px);
+      --header-bg: rgba(255, 255, 255, 0.06);
+    }
+    
+    /* Theme: Dark - dark overlay on cards */
+    body.theme-dark {
+      --card-bg: rgba(0, 0, 0, 0.35);
+      --card-blur: blur(0px);
+      --header-bg: rgba(0, 0, 0, 0.35);
     }
 
     .container {
@@ -87,9 +101,9 @@
       justify-content: space-between;
       align-items: center;
       padding: 18px 24px;
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      background: var(--header-bg, rgba(255, 255, 255, 0.06));
+      backdrop-filter: var(--card-blur, blur(0px));
+      -webkit-backdrop-filter: var(--card-blur, blur(0px));
       border-radius: 20px;
       box-shadow: 0 8px 32px rgba(56, 189, 248, 0.1), 0 0 40px rgba(124, 58, 237, 0.07);
       margin-bottom: 12px;
@@ -155,9 +169,9 @@
     }
 
     .nav-menu-content {
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      background: var(--card-bg, rgba(255, 255, 255, 0.06));
+      backdrop-filter: var(--card-blur, blur(0px));
+      -webkit-backdrop-filter: var(--card-blur, blur(0px));
       border-radius: 20px;
       padding: 12px;
       box-shadow: 0 8px 32px rgba(56, 189, 248, 0.1), 0 0 40px rgba(124, 58, 237, 0.07);
@@ -267,9 +281,9 @@
     }
 
     .card {
-      background: rgba(255, 255, 255, 0.10);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      background: var(--card-bg, rgba(255, 255, 255, 0.06));
+      backdrop-filter: var(--card-blur, blur(0px));
+      -webkit-backdrop-filter: var(--card-blur, blur(0px));
       border-radius: 24px;
       padding: 18px;
       box-shadow: 0 8px 32px rgba(56, 189, 248, 0.1), 0 0 40px rgba(124, 58, 237, 0.07);
@@ -1917,8 +1931,8 @@
         <div class="preset-form-group">
           <label class="preset-form-label" style="color: var(--text-primary);">Theme</label>
           <select id="themeSelector" class="mode-selector" onchange="changeTheme(this.value)">
-            <option value="neon-reef">Neon Reef (Current)</option>
-            <option value="ocean-light">Ocean Light (Coming Soon)</option>
+            <option value="light">Light Theme</option>
+            <option value="dark">Dark Theme</option>
           </select>
         </div>
         
@@ -4013,8 +4027,14 @@
         document.body.style.backgroundImage = `url('${savedBg}')`;
         updateBgPreview(savedBg);
       }
-      const savedTheme = localStorage.getItem('selectedTheme') || 'neon-reef';
+      const savedTheme = localStorage.getItem('selectedTheme') || 'light';
+      applyTheme(savedTheme);
       document.getElementById('themeSelector').value = savedTheme;
+    }
+    
+    function applyTheme(themeId) {
+      document.body.classList.remove('theme-light', 'theme-dark');
+      document.body.classList.add(`theme-${themeId}`);
     }
 
     function updateBgPreview(src) {
@@ -4062,12 +4082,8 @@
 
     function changeTheme(themeId) {
       localStorage.setItem('selectedTheme', themeId);
-      if (themeId === 'ocean-light') {
-        showToast('Ocean Light theme coming soon!', 'info');
-        document.getElementById('themeSelector').value = 'neon-reef';
-        return;
-      }
-      showToast('Theme applied', 'success');
+      applyTheme(themeId);
+      showToast(`${themeId.charAt(0).toUpperCase() + themeId.slice(1)} theme applied`, 'success');
     }
 
     let currentSettingsTab = 'wavemakers';
