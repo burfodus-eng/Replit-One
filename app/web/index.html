@@ -72,20 +72,21 @@
     #backgroundImage {
       position: absolute;
       top: 0;
-      left: 0;
-      width: 100%;
+      left: 50%;
+      transform: translateX(-50%) translateZ(0);
+      min-width: 100%;
       height: auto;
       z-index: -1;
       pointer-events: none;
       will-change: transform;
-      transform: translateZ(0);
     }
     
     #backgroundImage.fixed-bottom {
       position: fixed;
       top: auto;
       bottom: 0;
-      transform: translateZ(0);
+      left: 50%;
+      transform: translateX(-50%) translateZ(0);
     }
     
     /* Theme: Light - light mauve-tinted overlay on cards */
@@ -4064,6 +4065,11 @@
     function setBackgroundImage(url) {
       const bgImage = document.getElementById('backgroundImage');
       if (bgImage) {
+        // Reset styles before loading new image
+        bgImage.style.minHeight = '';
+        bgImage.style.minWidth = '100%';
+        bgImage.style.width = '';
+        bgImage.classList.remove('fixed-bottom');
         bgImage.src = url;
       }
     }
@@ -4449,25 +4455,35 @@
       const bgImage = document.getElementById('backgroundImage');
       if (!bgImage) return;
       
-      let imageHeight = 0;
       let ticking = false;
       
-      bgImage.onload = function() {
-        imageHeight = bgImage.offsetHeight;
-        handleScroll();
-      };
-      
-      if (bgImage.complete) {
-        imageHeight = bgImage.offsetHeight;
+      function updateImageSize() {
+        if (!bgImage.naturalWidth || !bgImage.naturalHeight) return;
+        
+        const viewportWidth = window.innerWidth;
+        const contentHeight = document.body.scrollHeight;
+        const aspectRatio = bgImage.naturalWidth / bgImage.naturalHeight;
+        
+        // Calculate what height the image would be at 100% viewport width
+        const imageHeightAtFullWidth = viewportWidth / aspectRatio;
+        
+        // If image is too short for content, scale it up to match content height
+        if (imageHeightAtFullWidth < contentHeight) {
+          bgImage.style.minHeight = contentHeight + 'px';
+          bgImage.style.minWidth = '';
+          bgImage.style.width = 'auto';
+        } else {
+          // Image is tall enough, just fill width
+          bgImage.style.minHeight = '';
+          bgImage.style.minWidth = '100%';
+          bgImage.style.width = '';
+        }
       }
       
       function handleScroll() {
-        if (!imageHeight) {
-          imageHeight = bgImage.offsetHeight;
-        }
-        
         const scrollY = window.scrollY;
         const viewportHeight = window.innerHeight;
+        const imageHeight = bgImage.offsetHeight;
         const stopPoint = imageHeight - viewportHeight;
         
         if (stopPoint > 0 && scrollY >= stopPoint) {
@@ -4482,6 +4498,16 @@
         ticking = false;
       }
       
+      bgImage.onload = function() {
+        updateImageSize();
+        handleScroll();
+      };
+      
+      if (bgImage.complete && bgImage.naturalWidth) {
+        updateImageSize();
+        handleScroll();
+      }
+      
       window.addEventListener('scroll', function() {
         if (!ticking) {
           requestAnimationFrame(handleScroll);
@@ -4490,9 +4516,16 @@
       }, { passive: true });
       
       window.addEventListener('resize', function() {
-        imageHeight = bgImage.offsetHeight;
+        updateImageSize();
         handleScroll();
       });
+      
+      // Re-calculate on content changes
+      const resizeObserver = new ResizeObserver(() => {
+        updateImageSize();
+        handleScroll();
+      });
+      resizeObserver.observe(document.body);
     }
 
     function init() {
