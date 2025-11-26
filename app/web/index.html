@@ -70,10 +70,10 @@
     }
     
     #backgroundImage {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 50%;
-      transform: translateX(-50%) translateZ(0);
+      transform: translateX(-50%) translateY(0) translateZ(0);
       min-width: 100%;
       height: auto;
       z-index: -1;
@@ -81,23 +81,9 @@
       will-change: transform;
     }
     
-    #backgroundImage.fixed-bottom {
-      position: fixed;
-      top: auto;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%) translateZ(0);
-    }
-    
     #backgroundImage.landscape-mode {
-      position: fixed;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%) translateZ(0);
       min-height: 100vh;
-      min-width: 100%;
       width: auto;
-      height: auto;
       object-fit: cover;
     }
     
@@ -4077,8 +4063,9 @@
     function setBackgroundImage(url) {
       const bgImage = document.getElementById('backgroundImage');
       if (bgImage) {
-        // Reset classes before loading new image - let CSS handle everything
-        bgImage.classList.remove('fixed-bottom', 'landscape-mode');
+        // Reset classes and transform before loading new image
+        bgImage.classList.remove('landscape-mode');
+        bgImage.style.transform = 'translateX(-50%) translateY(0) translateZ(0)';
         bgImage.src = url;
       }
     }
@@ -4466,6 +4453,7 @@
       
       let ticking = false;
       let isLandscape = false;
+      let maxScroll = 0;
       
       function updateImageMode() {
         if (!bgImage.naturalWidth || !bgImage.naturalHeight) return;
@@ -4478,36 +4466,32 @@
         const imageHeightAtFullWidth = viewportWidth / aspectRatio;
         
         // Landscape image: shorter than viewport when scaled to full width
-        // Use fixed cover mode - image stays put, content scrolls over it
         if (imageHeightAtFullWidth <= viewportHeight) {
           isLandscape = true;
           bgImage.classList.add('landscape-mode');
-          bgImage.classList.remove('fixed-bottom');
+          bgImage.style.transform = 'translateX(-50%) translateY(0) translateZ(0)';
+          maxScroll = 0;
         } else {
-          // Tall image: scrolls with page, locks at bottom (original behavior)
+          // Tall image: use actual rendered height for max scroll calculation
           isLandscape = false;
           bgImage.classList.remove('landscape-mode');
+          // Use actual rendered height from DOM, not calculated estimate
+          const renderedHeight = bgImage.getBoundingClientRect().height;
+          maxScroll = Math.max(0, renderedHeight - viewportHeight);
           handleScroll();
         }
       }
       
       function handleScroll() {
-        if (isLandscape) return;
+        if (isLandscape) {
+          ticking = false;
+          return;
+        }
         
         const scrollY = window.scrollY;
-        const viewportHeight = window.innerHeight;
-        const imageHeight = bgImage.offsetHeight;
-        const stopPoint = imageHeight - viewportHeight;
-        
-        if (stopPoint > 0 && scrollY >= stopPoint) {
-          if (!bgImage.classList.contains('fixed-bottom')) {
-            bgImage.classList.add('fixed-bottom');
-          }
-        } else {
-          if (bgImage.classList.contains('fixed-bottom')) {
-            bgImage.classList.remove('fixed-bottom');
-          }
-        }
+        // Clamp the scroll so image bottom never goes above viewport bottom
+        const translateY = Math.min(scrollY, maxScroll);
+        bgImage.style.transform = `translateX(-50%) translateY(-${translateY}px) translateZ(0)`;
         ticking = false;
       }
       
@@ -4520,7 +4504,7 @@
       }
       
       window.addEventListener('scroll', function() {
-        if (!ticking && !isLandscape) {
+        if (!ticking) {
           requestAnimationFrame(handleScroll);
           ticking = true;
         }
