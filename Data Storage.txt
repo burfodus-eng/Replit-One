@@ -1,0 +1,32 @@
+Data Storage
+SQLite Database (reef.db)
+
+A lightweight, file-based database stored locally on your Intel NUC
+No external database server needed - everything runs self-contained
+Uses SQLModel (a Python ORM) for clean data management
+What's stored in the database:
+
+Telemetry data - voltage, current, power readings over time
+Device configurations - GPIO pins, PWM frequencies, voltage limits, channel names
+Presets - your wavemaker flow patterns with keyframe curves
+Scheduled tasks - automation schedules for preset activation
+Architecture Style
+The system follows a Service-Oriented Architecture with clear separation:
+
+Layer	Technology	Purpose
+Frontend	Vanilla JavaScript + HTML5 Canvas	Touch-optimized dashboard UI
+API	FastAPI (Python)	RESTful endpoints for all controls
+Services	Modular Python classes	Business logic (power management, scheduling, etc.)
+Hardware Abstraction	HAL pattern	Unified interface for GPIO/PWM control
+Persistence	SQLite + SQLModel	Data storage
+Key Design Patterns:
+
+Hardware Abstraction Layer (HAL) - Same code works for simulation, Raspberry Pi (pigpio), or ESP32 serial
+Dependency Injection - Services are initialized at startup and shared via app.state
+Real-time Control Loop - 20Hz loop for wavemaker PWM, 1Hz for telemetry
+Configuration-driven - YAML file + environment variables for flexibility
+This design means you can run everything in simulation mode for testing, then switch to real hardware just by changing an environment variable (HARDWARE_MODE=esp32).
+
+Would you like me to dive deeper into any specific part of the architecture?
+
+25	DE25R26-FC2BR28-WC75V7U-SEX76G4
